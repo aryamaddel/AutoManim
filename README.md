@@ -1,0 +1,2 @@
+# AutoManim
+LLM + Manim
