@@ -1,21 +1,24 @@
+/* Global Styles */
 body {
   font-family: sans-serif;
-  background-color: #f3f4f6;
+  background-color: #403f4c;
   height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
+/* Flexbox Layout */
 .flex-grow {
   display: flex;
   flex-grow: 1;
 }
 
+/* Left Section */
 .left-section {
   flex: 1;
   padding: 20px;
-  background-color: #d1d5db;
-  border-right: 2px solid #9ca3af;
+  background-color: #403f4c;
+  border-right: 2px solid #403f4c;
 }
 
 .left-section h2 {
@@ -28,17 +31,19 @@ body {
   width: 100%;
   flex-grow: 1;
   padding: 12px;
-  background-color: white;
-  border: 1px solid #9ca3af;
+  background-color: #403f4c;
+  border: 1px solid #403f4c;
+  color: #ffefef;
   border-radius: 6px;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
   resize: none;
 }
 
+/* Right Section */
 .right-section {
   flex: 1;
-  padding: 20px;
-  background-color: #9ca3af;
+  padding: 10px;
+  background-color: #403f4c;
 }
 
 .right-section h2 {
@@ -53,18 +58,20 @@ body {
 
 #output-video {
   width: 100%;
-  background-color: black;
+  background-color: #403f4c;
   border-radius: 6px;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 2px 2px 5px #403f4c;
 }
 
+/* Input Container */
 .input-container {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background-color: white;
+  background-color: #403f4c;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  gap: 10px;
 }
 
 .input {
@@ -74,7 +81,7 @@ body {
   align-items: center;
   justify-content: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background-color: #e2e2e2;
+  background-color: #403f4c;
   outline-offset: 3px;
   padding: 20px;
   transition: 0.25s;
@@ -82,7 +89,7 @@ body {
 
 .input:focus {
   outline-offset: 5px;
-  background-color: #fff
+  background-color: #fff;
 }
 
 .small-input {
@@ -93,10 +100,11 @@ body {
   display: none;
 }
 
+/* Button Styles */
 .btn {
   border: none;
-  width: 15em;
-  height: 5em;
+  width: 10em;
+  height: 3.5em;
   border-radius: 3em;
   display: flex;
   justify-content: center;
@@ -119,11 +127,11 @@ body {
 }
 
 .btn:hover {
-  background: linear-gradient(0deg, #A47CF3, #683FEA);
-  box-shadow: inset 0px 1px 0px 0px rgba(255, 255, 255, 0.4),
-    inset 0px -4px 0px 0px rgba(0, 0, 0, 0.2),
+  background: linear-gradient(0deg, #161418, #4a4852);
+  box-shadow: inset 0px 1px 0px 0px rgba(2, 2, 2, 0.4),
+    inset 0px -4px 0px 0px rgba(12, 12, 12, 0.2),
     0px 0px 0px 4px rgba(255, 255, 255, 0.2),
-    0px 0px 180px 0px #9917FF;
+    0px 0px 180px 0px #000000;
   transform: translateY(-2px);
 }
 
@@ -137,30 +145,91 @@ body {
 }
 
 button:hover {
-  background-color: #1d4ed8;
+  background-color: #d1d0d4;
 }
 
-.input-container {
+
+
+/* Additional styling for a centered container */
+.center-container {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Styling for a new card component */
+.card {
+  background: 403f4c;
   padding: 20px;
-  background-color: white;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  gap: 10px; /* Added spacing between input and button */
+  border-radius: 10px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  text-align: center;
 }
 
-.input {
-  flex: 1;
-  width: auto;
-  padding: 12px;
-  font-size: 14px;
+/* Enhanced button styles */
+.primary-btn {
+  background: #15151d;
+  color: white;
+  padding: 10px 20px;
   border-radius: 8px;
+  transition: background 0.3s;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
 }
 
-.btn {
-  width: 10em; /* Reduced width */
-  height: 3.5em; /* Reduced height */
-  font-size: 14px;
+.primary-btn:hover {
+  background: #000000;
+}
+
+/* Custom scroll bar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Header styles */
+.header {
+  background-color: #403f4c;
+  color: rgb(255, 255, 255);
+  padding: 10px;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(54, 52, 52, 0.1);
+}
+
+
+/* Button styles fro run */
+.button2 {
+  background-color: #000000;
+  border: none;
+  color: white;
+  width: 40px;  /* Set width */
+  height: 40px; /* Set height equal to width */
+  border-radius: 50%; /* Makes it a circle */
+  text-align: center;
+  text-decoration: none;
+  display: flex; /* Use flexbox to center content */
+  align-items: center; /* Center vertically */
+  justify-content: center; /* Center horizontally */
+  font-size: 10px;
+  cursor: pointer;
+  float: right; /* Moves button to the right */
 }
 
