@@ -5,9 +5,7 @@ from manim import *
 class MainScene(Scene):
     def construct(self):
         square = Square()
-        circle = Circle()
         self.add(square)
-        self.play(
-            MoveAlongPath(square, circle),
-            square.animate.rotate(90 * DEGREES)
-        )
+        circle = Circle(radius=3)
+        self.play(MoveAlongPath(square, circle), run_time=3)
+        self.wait()
