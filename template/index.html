@@ -12,7 +12,7 @@
     <header class="header">AutoManim</header>
 
     <div class="flex-grow p-4">
-      <div id="manm-section" class="left-section hidden">
+      <div class="left-section">
         <h2 class="text-lg text-white font-semibold">MANIM Code</h2>
         <button class="button2">▶</button>
         <textarea
@@ -22,7 +22,7 @@
         ></textarea>
       </div>
 
-      <div id="video-container" class="right-section hidden mt-4">
+      <div class="right-section mt-4">
         <h2 class="text-lg text-white font-semibold">Generated Video</h2>
         <video id="output-video" controls class="w-full rounded-md shadow-lg">
           <source
@@ -61,12 +61,5 @@
         <span class="text">Generate</span>
       </button>
     </form>
-
-    <script>
-      function showContent() {
-        document.getElementById("video-container").classList.remove("hidden");
-        document.getElementById("manm-section").classList.remove("hidden");
-      }
-    </script>
   </body>
 </html>
