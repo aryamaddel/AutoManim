@@ -10,9 +10,10 @@ def index():
     if request.method == "POST":
         user_input = request.form.get("text")
         print(f"User input: {user_input}")
+        generate_and_run_manim(user_input)
 
     return render_template("index.html", user_input=user_input)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()

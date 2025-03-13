@@ -1,7 +1,6 @@
 from groq import Groq
 import subprocess
 import os
-import tempfile
 import re
 
 
@@ -9,20 +8,26 @@ def generate_manim_code(animation_description: str, error_message=None) -> str:
     """Generate runnable Manim code using Groq API"""
     groq = Groq()
 
-    # Base prompt for generating code
-    system_content = """You are a Manim code generator. Create complete, runnable Manim Python code based on the description.
-    
-    Rules:
-    1. Include all necessary imports at the top
-    2. Create a well-structured Scene class with proper construct method
-    3. Do NOT include a main block, as the code will be executed programmatically
-    4. Ensure the code is syntactically correct and follows Manim conventions
-    5. Return only the Python code with NO markdown formatting or code fences
-    6. Name your main scene class 'MainScene'
-    7. DO NOT use triple backticks (```) anywhere in your response
+    system_content = """You are a Manim code generator that ONLY outputs executable Python code.
+
+    IMPORTANT INSTRUCTIONS:
+    1. Return ONLY Python code - no explanations, no thinking, no markdown
+    2. Include all necessary imports (from manim import *)
+    3. Create a Scene class named 'MainScene' with proper construct method
+    4. Follow exact Manim syntax and conventions
+    5. Do not include main blocks or code fences (```)
+    6. Ensure animations work correctly with proper syntax
+    7. Do not output ANY text that isn't part of the final code
+
+    Example correct response format:
+    from manim import *
+
+    class MainScene(Scene):
+        def construct(self):
+            # Your code here
+            pass
     """
 
-    # If there's an error message, add it to the system content
     if error_message:
         system_content += f"""
         
@@ -39,101 +44,91 @@ def generate_manim_code(animation_description: str, error_message=None) -> str:
     chat_completion = groq.chat.completions.create(
         messages=[
             {"role": "system", "content": system_content},
-            {
-                "role": "user",
-                "content": user_content,
-            },
+            {"role": "user", "content": user_content},
         ],
-        model="llama3-70b-8192",
+        model="deepseek-r1-distill-llama-70b",
         temperature=0.2,
         stream=False,
     )
 
     code = chat_completion.choices[0].message.content
 
-    # Remove any code fence markers that might still be present
+    code = re.sub(r"<think>.*?</think>", "", code, flags=re.DOTALL)
     code = re.sub(r"^```python\s*", "", code)
     code = re.sub(r"^```\s*", "", code)
     code = re.sub(r"\s*```$", "", code)
 
+    if "class MainScene" not in code:
+        code = (
+            "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
+            + code
+        )
+
     return code
 
 
-def save_and_run_manim(code: str, flags="-pql"):
-    """Save the generated code to a temporary file and run it"""
-    # Create a temporary file
-    fd, temp_path = tempfile.mkstemp(suffix=".py")
-
-    try:
-        # Write the code to the file
-        with os.fdopen(fd, "w") as f:
-            f.write(code)
-
-        print(f"Manim code has been saved to temporary file: {temp_path}")
-
-        # Run the manim command
-        cmd = f"manim {flags} {temp_path} MainScene"
-        print(f"Running: {cmd}")
-
-        # Execute the command
-        result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
-
-        # Print the output
-        print("Output:")
-        print(result.stdout)
-
-        # Capture any errors
-        error_output = ""
-        if result.stderr:
-            print("Errors:")
-            print(result.stderr)
-            error_output = result.stderr
-
-        # Return the success status, file path, and error output
-        return result.returncode == 0, temp_path, error_output
-
-    except Exception as e:
-        error_message = f"Error running Manim code: {e}"
-        print(error_message)
-        return False, temp_path, error_message
-
-
-def generate_and_run_manim(animation_description: str, max_attempts=3):
+def generate_and_run_manim(
+    animation_description: str, max_attempts=6, filename="manim_animation.py"
+):
     """Generate Manim code, run it, and fix errors if needed"""
     attempt = 1
     error_message = None
+    final_code = None
+    success = False
+
+    file_path = os.path.join(os.getcwd(), filename)
+    print(f"Using file for all attempts: {file_path}")
 
     while attempt <= max_attempts:
         print(f"\nAttempt {attempt} of {max_attempts}")
 
-        # Generate or fix code
         code = generate_manim_code(animation_description, error_message)
+        final_code = code  # Store the latest code
 
         print("\nGenerated Code Preview:")
         print("----------------------")
         print(code)
 
-        # Run the code
-        success, file_path, error_output = save_and_run_manim(code)
+        with open(file_path, "w") as f:
+            f.write(code)
+
+        print(f"Updated Manim code in: {file_path}")
+
+        cmd = f"manim -pql {file_path} MainScene"
+        print(f"Running: {cmd}")
+
+        result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+
+        print("Output:")
+        print(result.stdout)
+
+        success = result.returncode == 0
 
         if success:
             print(f"Manim animation completed successfully on attempt {attempt}!")
-            return True, file_path, code
+            break
         else:
-            print(f"Attempt {attempt} failed. Sending error to LLM for correction.")
-            error_message = error_output
+            if result.stderr:
+                print("Errors:")
+                print(result.stderr)
+                error_message = result.stderr
+
             attempt += 1
+            print(f"Attempt {attempt-1} failed. Sending error to LLM for correction.")
 
-    print(f"Failed to generate working Manim code after {max_attempts} attempts.")
-    return False, None, code
+    if not success:
+        print(f"Failed to generate working Manim code after {max_attempts} attempts.")
+
+    return success, file_path, final_code
 
 
-# Example usage
-if __name__ == "__main__":
-    description = "Create an animation showing a pyramid with a square base and an equilateral triangle on top."
-    success, file_path, final_code = generate_and_run_manim(description)
+# if __name__ == "__main__":
+#     description = "Create an animation showing a pyramid with a square base and an equilateral triangle on top."
+#     success, file_path, final_code = generate_and_run_manim(description)
 
-    if success:
-        print(f"Final working code saved to: {file_path}")
-    else:
-        print("Could not generate working code within the maximum attempts.")
+#     if success:
+#         print("Successfully generated working Manim code!")
+#         print("Final working code:")
+#         print(final_code)
+#     else:
+#         print("Could not generate working code within the maximum attempts.")
