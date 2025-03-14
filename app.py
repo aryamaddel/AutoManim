@@ -2,6 +2,7 @@ import re
 from flask import Flask, render_template, request, jsonify
 import subprocess
 import os
+import time
 
 app = Flask(__name__)
 
@@ -11,7 +12,6 @@ def index():
     user_input = None
     if request.method == "POST":
         user_input = request.form.get("text")
-
     return render_template("index.html", user_input=user_input)
 
 
@@ -20,34 +20,43 @@ def execute_manim():
     try:
         manim_code = request.json.get("code")
 
-        # Use a fixed file path in the static folder
         scene_path = os.path.join(app.static_folder, "manim_code.py")
 
-        # Write the code to the file
         with open(scene_path, "w") as f:
             f.write(manim_code)
 
-        # Execute manim command
+        scene_name_match = re.search(r"class\s+(\w+)\(Scene\):", manim_code)
+        if not scene_name_match:
+            return jsonify({"error": "No valid scene class found in the code."}), 400
+
+        scene_name = scene_name_match.group(1)
+
         subprocess.run(
-            ["manim", "-qh", scene_path],
+            ["manim", "-qh", scene_path, scene_name],
             cwd=app.static_folder,
             capture_output=True,
             text=True,
         )
 
-        # Look for the generated video in the expected location
         video_dir = os.path.join(
             app.static_folder, "media", "videos", "manim_code", "1080p60"
         )
 
-        video_files = [f for f in os.listdir(video_dir) if f.endswith(".mp4")]
+        video_files = [
+            f
+            for f in os.listdir(video_dir)
+            if f.startswith(scene_name) and f.endswith(".mp4")
+        ]
 
-        video_filename = video_files[0]
+        if not video_files:
+            return jsonify({"error": "No video found for the scene."}), 404
 
-        # Construct the correct URL for the video
-        video_url = f"/static/media/videos/manim_code/1080p60/{video_filename}"
+        latest_video = max(
+            video_files, key=lambda f: os.path.getmtime(os.path.join(video_dir, f))
+        )
 
-        # Log the video URL for debugging
+        video_url = f"/static/media/videos/manim_code/1080p60/{latest_video}"
+
         print(f"Video URL: {video_url}")
 
         return jsonify({"success": True, "video_url": video_url})
