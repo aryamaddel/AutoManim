@@ -2,7 +2,6 @@ import re
 from flask import Flask, render_template, request, jsonify
 import subprocess
 import os
-import time
 
 app = Flask(__name__)
 
