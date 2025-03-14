@@ -125,17 +125,6 @@ def generate_and_run_manim(
     return success, file_path, final_code
 
 
-# if __name__ == "__main__":
-#     description = "Create an animation showing a pyramid with a square base and an equilateral triangle on top."
-#     success, file_path, final_code = generate_and_run_manim(description)
-
-#     if success:
-#         print("Successfully generated working Manim code!")
-#         print("Final working code:")
-#         print(final_code)
-#     else:
-#         print("Could not generate working code within the maximum attempts.")
-
 
 @app.route("/", methods=["GET", "POST"])
 def index():
