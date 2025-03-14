@@ -1,10 +1,61 @@
-from flask import Flask, render_template, request
-from groq import Groq
+from flask import Flask, render_template, request, jsonify
 import subprocess
 import os
-import re
 
-app = Flask(__name__, template_folder="template")
+app = Flask(__name__)
+
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    user_input = None
+    if request.method == "POST":
+        user_input = request.form.get("text")
+
+    return render_template("index.html", user_input=user_input)
+
+
+@app.route("/execute_manim", methods=["POST"])
+def execute_manim():
+    try:
+        manim_code = request.json.get("code")
+
+        # Use a fixed file path in the static folder
+        scene_path = os.path.join(app.static_folder, "manim_code.py")
+
+        # Write the code to the file
+        with open(scene_path, "w") as f:
+            f.write(manim_code)
+
+        # Execute manim command
+        subprocess.run(
+            ["manim", "-ql", scene_path],
+            cwd=app.static_folder,
+            capture_output=True,
+            text=True,
+        )
+
+        # Look for the generated video in the expected location
+        video_dir = os.path.join(
+            app.static_folder, "media", "videos", "manim_code", "480p15"
+        )
+
+        video_files = [f for f in os.listdir(video_dir) if f.endswith(".mp4")]
+
+        video_filename = video_files[0]
+
+        # Construct the correct URL for the video
+        video_url = f"/static/media/videos/manim_code/480p15/{video_filename}"
+
+        # Log the video URL for debugging
+        print(f"Video URL: {video_url}")
+
+        return jsonify({"success": True, "video_url": video_url})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+from groq import Groq
 
 
 def generate_manim_code(animation_description: str, error_message=None) -> str:
@@ -68,74 +119,3 @@ def generate_manim_code(animation_description: str, error_message=None) -> str:
         )
 
     return code
-
-
-def generate_and_run_manim(
-    animation_description: str, max_attempts=6, filename="manim_animation.py"
-):
-    """Generate Manim code, run it, and fix errors if needed"""
-    attempt = 1
-    error_message = None
-    final_code = None
-    success = False
-
-    file_path = os.path.join(os.getcwd(), filename)
-    print(f"Using file for all attempts: {file_path}")
-
-    while attempt <= max_attempts:
-        print(f"\nAttempt {attempt} of {max_attempts}")
-
-        code = generate_manim_code(animation_description, error_message)
-        final_code = code  # Store the latest code
-
-        print("\nGenerated Code Preview:")
-        print("----------------------")
-        print(code)
-
-        with open(file_path, "w") as f:
-            f.write(code)
-
-        print(f"Updated Manim code in: {file_path}")
-
-        cmd = f"manim -pql {file_path} MainScene"
-        print(f"Running: {cmd}")
-
-        result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
-
-        print("Output:")
-        print(result.stdout)
-
-        success = result.returncode == 0
-
-        if success:
-            print(f"Manim animation completed successfully on attempt {attempt}!")
-            break
-        else:
-            if result.stderr:
-                print("Errors:")
-                print(result.stderr)
-                error_message = result.stderr
-
-            attempt += 1
-            print(f"Attempt {attempt-1} failed. Sending error to LLM for correction.")
-
-    if not success:
-        print(f"Failed to generate working Manim code after {max_attempts} attempts.")
-
-    return success, file_path, final_code
-
-
-
-@app.route("/", methods=["GET", "POST"])
-def index():
-    user_input = None
-    if request.method == "POST":
-        user_input = request.form.get("text")
-        print(f"User input: {user_input}")
-        generate_and_run_manim(user_input)
-
-    return render_template("index.html", user_input=user_input)
-
-
-if __name__ == "__main__":
-    app.run()
