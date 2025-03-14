@@ -28,7 +28,7 @@ def execute_manim():
 
         # Execute manim command
         subprocess.run(
-            ["manim", "-ql", scene_path],
+            ["manim", "-qh", scene_path],
             cwd=app.static_folder,
             capture_output=True,
             text=True,
@@ -36,7 +36,7 @@ def execute_manim():
 
         # Look for the generated video in the expected location
         video_dir = os.path.join(
-            app.static_folder, "media", "videos", "manim_code", "480p15"
+            app.static_folder, "media", "videos", "manim_code", "1080p60"
         )
 
         video_files = [f for f in os.listdir(video_dir) if f.endswith(".mp4")]
@@ -44,7 +44,7 @@ def execute_manim():
         video_filename = video_files[0]
 
         # Construct the correct URL for the video
-        video_url = f"/static/media/videos/manim_code/480p15/{video_filename}"
+        video_url = f"/static/media/videos/manim_code/1080p60/{video_filename}"
 
         # Log the video URL for debugging
         print(f"Video URL: {video_url}")
