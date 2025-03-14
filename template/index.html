@@ -1,65 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AutoManim</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/static/style.css" />
-  </head>
 
-  <body>
-    <header class="header">AutoManim</header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoManim</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
 
-    <div class="flex-grow p-4">
-      <div class="left-section">
-        <h2 class="text-lg text-white font-semibold">MANIM Code</h2>
-        <button class="button2">▶</button>
-        <textarea
-          id="manm-code"
-          rows="5"
-          class="w-full p-2 border rounded-md"
-        ></textarea>
-      </div>
+<body>
+  <header class="header">AutoManim</header>
 
-      <div class="right-section mt-4">
-        <h2 class="text-lg text-white font-semibold">Generated Video</h2>
-        <video id="output-video" controls class="w-full rounded-md shadow-lg">
-          <source
-            src="https://samplelib.com/lib/preview/mp4/sample-5s.mp4"
-            type="video/mp4"
-          />
-          Your browser does not support the video tag.
-        </video>
-      </div>
+  <div class="flex-grow p-4">
+    <div class="left-section">
+      <h2 class="text-lg text-white font-semibold">MANIM Code</h2>
+      <button class="button2">▶</button>
+      <textarea id="manm-code" rows="5" class="w-full p-2 border rounded-md">
+      </textarea>
+      <script>
+        const outputCode = '{{ output_code | tojson }}';
+        console.log("Received Output Code from Flask:", outputCode);
+    
+        // Set the textarea value to the 3rd element (index 2) if available
+        if (outputCode.length > 2) {
+            document.getElementById("manm-code").value = outputCode;
+        } else {
+            document.getElementById("manm-code").value = "No valid code received.";
+        }
+    </script>
+
     </div>
 
-    <form action="/" method="post" class="input-container text-center mt-4">
-      <input
-        type="text"
-        placeholder="Write here..."
-        name="text"
-        class="input small-input p-2 border rounded-md"
-      />
-      <button
-        class="btn bg-blue-600 text-white p-2 rounded-md ml-2 hover:bg-blue-700"
-        onclick="showContent()"
-      >
-        <svg
-          height="24"
-          width="24"
-          fill="#FFFFFF"
-          viewBox="0 0 24 24"
-          data-name="Layer 1"
-          id="Layer_1"
-          class="sparkle inline-block"
-        >
-          <path
-            d="M10,21.236,6.755,14.745.264,11.5,6.755,8.255,10,1.764l3.245,6.491L19.736,11.5l-6.491,3.245ZM18,21l1.5,3L21,21l3-1.5L21,18l-1.5-3L18,18l-3,1.5ZM19.333,4.667,20.5,7l1.167-2.333L24,3.5,21.667,2.333,20.5,0,19.333,2.333,17,3.5Z"
-          ></path>
-        </svg>
-        <span class="text">Generate</span>
-      </button>
-    </form>
-  </body>
+    <div class="right-section mt-4">
+      <h2 class="text-lg text-white font-semibold">Generated Video</h2>
+      <video id="output-video" controls class="w-full rounded-md shadow-lg">
+        <source src="https://samplelib.com/lib/preview/mp4/sample-5s.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  </div>
+
+  <form action="/" method="post" class="input-container text-center mt-4">
+    <input type="text" placeholder="Write here..." name="text" class="input small-input p-2 border rounded-md" />
+    <button class="btn bg-blue-600 text-white p-2 rounded-md ml-2 hover:bg-blue-700" onclick="showContent()">
+      <svg height="24" width="24" fill="#FFFFFF" viewBox="0 0 24 24" data-name="Layer 1" id="Layer_1"
+        class="sparkle inline-block">
+        <path
+          d="M10,21.236,6.755,14.745.264,11.5,6.755,8.255,10,1.764l3.245,6.491L19.736,11.5l-6.491,3.245ZM18,21l1.5,3L21,21l3-1.5L21,18l-1.5-3L18,18l-3,1.5ZM19.333,4.667,20.5,7l1.167-2.333L24,3.5,21.667,2.333,20.5,0,19.333,2.333,17,3.5Z">
+        </path>
+      </svg>
+      <span class="text">Generate</span>
+    </button>
+  </form>
+</body>
+
 </html>
