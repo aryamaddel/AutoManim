@@ -30,7 +30,7 @@ def execute_manim():
         scene_name = scene_name_match.group(1)
 
         result = subprocess.run(
-            ["manim", "-qh", scene_path, scene_name],
+            ["manim", "-ql", scene_path, scene_name],
             cwd=app.static_folder,
             capture_output=True,
             text=True,
@@ -40,7 +40,7 @@ def execute_manim():
             return jsonify({"error": result.stderr}), 500
 
         video_dir = os.path.join(
-            app.static_folder, "media", "videos", "manim_code", "1080p60"
+            app.static_folder, "media", "videos", "manim_code", "480p15"
         )
 
         video_files = [
@@ -56,7 +56,7 @@ def execute_manim():
             video_files, key=lambda f: os.path.getmtime(os.path.join(video_dir, f))
         )
 
-        video_url = f"/static/media/videos/manim_code/1080p60/{latest_video}"
+        video_url = f"/static/media/videos/manim_code/480p15/{latest_video}"
 
         print(f"Video URL: {video_url}")
 
@@ -98,7 +98,7 @@ def generate_manim_code():
                 {"role": "system", "content": system_content},
                 {"role": "user", "content": user_content},
             ],
-            model="deepseek-r1-distill-llama-70b",
+            model="llama-3.3-70b-versatile",
             temperature=0.2,
             stream=False,
         )
