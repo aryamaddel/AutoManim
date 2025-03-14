@@ -87,6 +87,7 @@ class CreateCircle(Scene):
           placeholder="Write here..."
           name="text"
           class="flex-grow py-3 px-4 bg-gray-700 rounded-md border border-gray-600 focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 outline-none"
+          id="manim-prompt"
         />
         <button
           id="generate-button"
@@ -110,8 +111,8 @@ class CreateCircle(Scene):
         const manimCode = document.getElementById("manim-code");
         const outputVideo = document.getElementById("output-video");
         const statusMessage = document.getElementById("status-message");
+        const manimPrompt = document.getElementById("manim-prompt");
 
-        // Function to execute Manim code
         async function executeManim() {
           // Show status message
           statusMessage.classList.remove("hidden");
@@ -140,18 +141,37 @@ class CreateCircle(Scene):
           } catch (error) {
             console.error("Error:", error);
             statusMessage.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
-          } finally {
-            // Hide status message after a delay
-            setTimeout(() => {
-              statusMessage.classList.add("hidden");
-            }, 3000);
           }
         }
 
         executeButton.addEventListener("click", executeManim);
+        async function generateManim() {
+          statusMessage.classList.remove("hidden");
 
-        // to be implemented later on
-        generateButton.addEventListener("click", executeManim);
+          try {
+            const response = await fetch("/generate_manim_code", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ manimPrompt: manimPrompt.value }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              manimCode.value = data.code;
+            } else {
+              console.error("Error generating Manim code:", data.error);
+              statusMessage.innerHTML = `<p class="text-red-500">Error: ${data.error}</p>`;
+            }
+          } catch (error) {
+            console.error("Error:", error);
+            statusMessage.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+          }
+        }
+
+        generateButton.addEventListener("click", generateManim);
       });
     </script>
   </body>
