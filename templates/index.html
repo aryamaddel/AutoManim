@@ -20,9 +20,30 @@
           <h2 class="text-xl font-semibold text-indigo-300">MANIM Code</h2>
           <button
             id="execute-button"
-            class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center gap-2"
           >
-            Execute
+            <span>Execute</span>
+            <svg
+              id="execute-spinner"
+              class="animate-spin h-5 w-5 text-white hidden"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
           </button>
         </div>
         <textarea
@@ -47,6 +68,35 @@ class CreateCircle(Scene):
         <div
           class="relative w-full aspect-video bg-black rounded-md overflow-hidden"
         >
+          <div
+            id="video-overlay"
+            class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden"
+          >
+            <div class="text-center">
+              <svg
+                class="animate-spin h-10 w-10 text-indigo-400 mx-auto mb-4"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              <p class="text-indigo-300">Generating animation...</p>
+              <p class="text-gray-400 text-sm mt-2">This may take a moment</p>
+            </div>
+          </div>
           <video
             id="output-video"
             controls
@@ -59,26 +109,73 @@ class CreateCircle(Scene):
             Your browser does not support the video tag.
           </video>
         </div>
-        <div
-          id="status-message"
-          class="mt-4 text-center text-indigo-300 hidden"
-        >
-          <p>Processing...</p>
+        <div id="status-message" class="mt-4 text-center hidden">
+          <div class="px-4 py-3 rounded-md" id="status-container">
+            <p id="status-text">Processing...</p>
+          </div>
         </div>
 
         <div class="mt-6 flex flex-col sm:flex-row gap-4">
-          <input
-            type="text"
-            placeholder="Enter your prompt..."
-            id="manim-prompt"
-            class="flex-grow py-2 px-4 bg-gray-700 rounded-md border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 outline-none"
-          />
+          <div class="flex-grow relative">
+            <input
+              type="text"
+              placeholder="Enter your prompt..."
+              id="manim-prompt"
+              class="w-full py-2 px-4 bg-gray-700 rounded-md border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 outline-none"
+            />
+            <div
+              id="generate-prompt-spinner"
+              class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden"
+            >
+              <svg
+                class="animate-spin h-5 w-5 text-indigo-400"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            </div>
+          </div>
           <button
             id="generate-button"
             type="button"
             class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded-md flex items-center justify-center gap-2 transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <span>Generate Code</span>
+            <svg
+              id="generate-spinner"
+              class="animate-spin h-5 w-5 text-white hidden"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
           </button>
         </div>
       </div>
@@ -91,10 +188,70 @@ class CreateCircle(Scene):
         const manimCode = document.getElementById("manim-code");
         const outputVideo = document.getElementById("output-video");
         const statusMessage = document.getElementById("status-message");
+        const statusText = document.getElementById("status-text");
+        const statusContainer = document.getElementById("status-container");
         const manimPrompt = document.getElementById("manim-prompt");
+        const executeSpinner = document.getElementById("execute-spinner");
+        const generateSpinner = document.getElementById("generate-spinner");
+        const generatePromptSpinner = document.getElementById(
+          "generate-prompt-spinner"
+        );
+        const videoOverlay = document.getElementById("video-overlay");
+
+        function showLoading(operation) {
+          statusMessage.classList.remove("hidden");
+          statusContainer.className =
+            "px-4 py-3 rounded-md bg-indigo-900 bg-opacity-50";
+          statusText.className = "text-indigo-300";
+
+          if (operation === "execute") {
+            statusText.textContent = "Executing Manim code...";
+            executeSpinner.classList.remove("hidden");
+            executeButton.disabled = true;
+            videoOverlay.classList.remove("hidden");
+          } else if (operation === "generate") {
+            statusText.textContent = "Generating Manim code...";
+            generateSpinner.classList.remove("hidden");
+            generatePromptSpinner.classList.remove("hidden");
+            generateButton.disabled = true;
+          }
+        }
+
+        function hideLoading(operation) {
+          if (operation === "execute") {
+            executeSpinner.classList.add("hidden");
+            executeButton.disabled = false;
+            videoOverlay.classList.add("hidden");
+          } else if (operation === "generate") {
+            generateSpinner.classList.add("hidden");
+            generatePromptSpinner.classList.add("hidden");
+            generateButton.disabled = false;
+          }
+        }
+
+        function showError(message, operation) {
+          statusMessage.classList.remove("hidden");
+          statusContainer.className =
+            "px-4 py-3 rounded-md bg-red-900 bg-opacity-50";
+          statusText.className = "text-red-300";
+          statusText.textContent = `Error: ${message}`;
+          hideLoading(operation);
+        }
+
+        function showSuccess(message) {
+          statusMessage.classList.remove("hidden");
+          statusContainer.className =
+            "px-4 py-3 rounded-md bg-green-900 bg-opacity-50";
+          statusText.className = "text-green-300";
+          statusText.textContent = message;
+
+          setTimeout(() => {
+            statusMessage.classList.add("hidden");
+          }, 3000);
+        }
 
         async function executeManim() {
-          statusMessage.classList.remove("hidden");
+          showLoading("execute");
 
           try {
             const response = await fetch("/execute_manim", {
@@ -109,21 +266,32 @@ class CreateCircle(Scene):
 
             if (response.ok) {
               const videoElement = outputVideo.querySelector("source");
-              videoElement.src = data.video_url;
+              videoElement.src = data.video_url + "?t=" + new Date().getTime();
               outputVideo.load();
               outputVideo.play();
+              hideLoading("execute");
+              showSuccess("Animation generated successfully!");
             } else {
-              console.error("Error executing Manim code:", data.error);
-              statusMessage.innerHTML = `<p class="text-red-500">Error: ${data.error}</p>`;
+              showError(
+                data.error || "Failed to execute Manim code",
+                "execute"
+              );
             }
           } catch (error) {
-            console.error("Error:", error);
-            statusMessage.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+            showError(
+              error.message || "An unexpected error occurred",
+              "execute"
+            );
           }
         }
 
         async function generateManim() {
-          statusMessage.classList.remove("hidden");
+          if (!manimPrompt.value.trim()) {
+            showError("Please enter a prompt", "generate");
+            return;
+          }
+
+          showLoading("generate");
 
           try {
             const response = await fetch("/generate_manim_code", {
@@ -138,18 +306,33 @@ class CreateCircle(Scene):
 
             if (response.ok) {
               manimCode.value = data.code;
+              hideLoading("generate");
+              showSuccess("Code generated successfully!");
             } else {
-              console.error("Error generating Manim code:", data.error);
-              statusMessage.innerHTML = `<p class="text-red-500">Error: ${data.error}</p>`;
+              showError(
+                data.error || "Failed to generate Manim code",
+                "generate"
+              );
             }
           } catch (error) {
-            console.error("Error:", error);
-            statusMessage.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+            showError(
+              error.message || "An unexpected error occurred",
+              "generate"
+            );
           }
         }
 
         executeButton.addEventListener("click", executeManim);
         generateButton.addEventListener("click", generateManim);
+
+        manimPrompt.addEventListener("keypress", function (event) {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            generateManim();
+          }
+        });
+
+        statusMessage.classList.add("hidden");
       });
     </script>
   </body>
