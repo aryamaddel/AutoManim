@@ -55,9 +55,9 @@ from manim import *
 
 class CreateCircle(Scene):
     def construct(self):
-        circle = Circle()  # create a circle
-        circle.set_fill(PINK, opacity=0.5)  # set the color and transparency
-        self.play(Create(circle))  # show the circle on screen</textarea
+        circle = Circle()
+        circle.set_fill(PINK, opacity=0.5)
+        self.play(Create(circle))</textarea
         >
       </div>
 
@@ -106,7 +106,6 @@ class CreateCircle(Scene):
               src="http://127.0.0.1:5000/static/media/videos/manim_code/1080p60/CreateCircle.mp4"
               type="video/mp4"
             />
-            Your browser does not support the video tag.
           </video>
         </div>
         <div id="status-message" class="mt-4 text-center hidden">
@@ -182,157 +181,96 @@ class CreateCircle(Scene):
     </main>
 
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const executeButton = document.getElementById("execute-button");
-        const generateButton = document.getElementById("generate-button");
-        const manimCode = document.getElementById("manim-code");
-        const outputVideo = document.getElementById("output-video");
-        const statusMessage = document.getElementById("status-message");
-        const statusText = document.getElementById("status-text");
-        const statusContainer = document.getElementById("status-container");
-        const manimPrompt = document.getElementById("manim-prompt");
-        const executeSpinner = document.getElementById("execute-spinner");
-        const generateSpinner = document.getElementById("generate-spinner");
-        const generatePromptSpinner = document.getElementById(
-          "generate-prompt-spinner"
-        );
-        const videoOverlay = document.getElementById("video-overlay");
+      document.addEventListener("DOMContentLoaded", () => {
+        const els = {
+          executeButton: document.getElementById("execute-button"),
+          generateButton: document.getElementById("generate-button"),
+          manimCode: document.getElementById("manim-code"),
+          outputVideo: document.getElementById("output-video"),
+          statusMessage: document.getElementById("status-message"),
+          statusText: document.getElementById("status-text"),
+          statusContainer: document.getElementById("status-container"),
+          manimPrompt: document.getElementById("manim-prompt"),
+          executeSpinner: document.getElementById("execute-spinner"),
+          generateSpinner: document.getElementById("generate-spinner"),
+          generatePromptSpinner: document.getElementById(
+            "generate-prompt-spinner"
+          ),
+          videoOverlay: document.getElementById("video-overlay"),
+        };
 
-        function showLoading(operation) {
-          statusMessage.classList.remove("hidden");
-          statusContainer.className =
-            "px-4 py-3 rounded-md bg-indigo-900 bg-opacity-50";
-          statusText.className = "text-indigo-300";
+        const toggleLoading = (type, state) => {
+          els[`${type}Spinner`].classList.toggle("hidden", !state);
+          els[`${type}Button`].disabled = state;
+          if (type === "execute")
+            els.videoOverlay.classList.toggle("hidden", !state);
+        };
 
-          if (operation === "execute") {
-            statusText.textContent = "Executing Manim code...";
-            executeSpinner.classList.remove("hidden");
-            executeButton.disabled = true;
-            videoOverlay.classList.remove("hidden");
-          } else if (operation === "generate") {
-            statusText.textContent = "Generating Manim code...";
-            generateSpinner.classList.remove("hidden");
-            generatePromptSpinner.classList.remove("hidden");
-            generateButton.disabled = true;
-          }
-        }
-
-        function hideLoading(operation) {
-          if (operation === "execute") {
-            executeSpinner.classList.add("hidden");
-            executeButton.disabled = false;
-            videoOverlay.classList.add("hidden");
-          } else if (operation === "generate") {
-            generateSpinner.classList.add("hidden");
-            generatePromptSpinner.classList.add("hidden");
-            generateButton.disabled = false;
-          }
-        }
-
-        function showError(message, operation) {
-          statusMessage.classList.remove("hidden");
-          statusContainer.className =
-            "px-4 py-3 rounded-md bg-red-900 bg-opacity-50";
-          statusText.className = "text-red-300";
-          statusText.textContent = `Error: ${message}`;
-          hideLoading(operation);
-        }
-
-        function showSuccess(message) {
-          statusMessage.classList.remove("hidden");
-          statusContainer.className =
-            "px-4 py-3 rounded-md bg-green-900 bg-opacity-50";
-          statusText.className = "text-green-300";
-          statusText.textContent = message;
-
-          setTimeout(() => {
-            statusMessage.classList.add("hidden");
-          }, 3000);
-        }
+        const showStatus = (type, message, timeout = 3000) => {
+          els.statusContainer.className = `px-4 py-3 rounded-md bg-${type}-900 bg-opacity-50`;
+          els.statusText.className = `text-${type}-300`;
+          els.statusText.textContent = message;
+          els.statusMessage.classList.remove("hidden");
+          if (timeout)
+            setTimeout(
+              () => els.statusMessage.classList.add("hidden"),
+              timeout
+            );
+        };
 
         async function executeManim() {
-          showLoading("execute");
-
+          toggleLoading("execute", true);
+          showStatus("indigo", "Executing Manim code...", false);
           try {
-            const response = await fetch("/execute_manim", {
+            const res = await fetch("/execute_manim", {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ code: manimCode.value }),
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code: els.manimCode.value }),
             });
-
-            const data = await response.json();
-
-            if (response.ok) {
-              const videoElement = outputVideo.querySelector("source");
-              videoElement.src = data.video_url + "?t=" + new Date().getTime();
-              outputVideo.load();
-              outputVideo.play();
-              hideLoading("execute");
-              showSuccess("Animation generated successfully!");
-            } else {
-              showError(
-                data.error || "Failed to execute Manim code",
-                "execute"
-              );
-            }
-          } catch (error) {
-            showError(
-              error.message || "An unexpected error occurred",
-              "execute"
-            );
+            const data = await res.json();
+            if (res.ok) {
+              els.outputVideo.querySelector("source").src =
+                data.video_url + "?t=" + Date.now();
+              els.outputVideo.load();
+              els.outputVideo.play();
+              showStatus("green", "Animation generated successfully!");
+            } else
+              throw new Error(data.error || "Failed to execute Manim code");
+          } catch (e) {
+            showStatus("red", e.message, false);
+          } finally {
+            toggleLoading("execute", false);
           }
         }
 
         async function generateManim() {
-          if (!manimPrompt.value.trim()) {
-            showError("Please enter a prompt", "generate");
-            return;
-          }
-
-          showLoading("generate");
-
+          if (!els.manimPrompt.value.trim())
+            return showStatus("red", "Please enter a prompt", false);
+          toggleLoading("generate", true);
+          showStatus("indigo", "Generating Manim code...", false);
           try {
-            const response = await fetch("/generate_manim_code", {
+            const res = await fetch("/generate_manim_code", {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ manimPrompt: manimPrompt.value }),
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ manimPrompt: els.manimPrompt.value }),
             });
-
-            const data = await response.json();
-
-            if (response.ok) {
-              manimCode.value = data.code;
-              hideLoading("generate");
-              showSuccess("Code generated successfully!");
-            } else {
-              showError(
-                data.error || "Failed to generate Manim code",
-                "generate"
-              );
-            }
-          } catch (error) {
-            showError(
-              error.message || "An unexpected error occurred",
-              "generate"
-            );
+            const data = await res.json();
+            if (res.ok) els.manimCode.value = data.code;
+            else throw new Error(data.error || "Failed to generate Manim code");
+            showStatus("green", "Code generated successfully!");
+          } catch (e) {
+            showStatus("red", e.message, false);
+          } finally {
+            toggleLoading("generate", false);
           }
         }
 
-        executeButton.addEventListener("click", executeManim);
-        generateButton.addEventListener("click", generateManim);
-
-        manimPrompt.addEventListener("keypress", function (event) {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            generateManim();
-          }
-        });
-
-        statusMessage.classList.add("hidden");
+        els.executeButton.addEventListener("click", executeManim);
+        els.generateButton.addEventListener("click", generateManim);
+        els.manimPrompt.addEventListener(
+          "keypress",
+          (e) => e.key === "Enter" && generateManim()
+        );
       });
     </script>
   </body>
