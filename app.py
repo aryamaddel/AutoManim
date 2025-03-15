@@ -1,10 +1,18 @@
 import re
-from flask import Flask, render_template, request, jsonify
-import subprocess
 import os
+import subprocess
+import logging
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from groq import Groq
 
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
+
+groq_client = Groq()
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -19,6 +27,11 @@ def index():
 def execute_manim():
     try:
         manim_code = request.json.get("code")
+        if not manim_code:
+            return jsonify({"error": "No code provided"}), 400
+
+        if not os.path.exists(app.static_folder):
+            os.makedirs(app.static_folder)
 
         scene_path = os.path.join(app.static_folder, "manim_code.py")
 
@@ -26,8 +39,11 @@ def execute_manim():
             f.write(manim_code)
 
         scene_name_match = re.search(r"class\s+(\w+)\(Scene\):", manim_code)
+        if not scene_name_match:
+            return jsonify({"error": "Could not find scene class in the code"}), 400
 
         scene_name = scene_name_match.group(1)
+        logger.info(f"Executing Manim scene: {scene_name}")
 
         result = subprocess.run(
             ["manim", "-ql", scene_path, scene_name],
@@ -37,11 +53,16 @@ def execute_manim():
         )
 
         if result.returncode != 0:
+            logger.error(f"Manim execution failed: {result.stderr}")
             return jsonify({"error": result.stderr}), 500
 
         video_dir = os.path.join(
             app.static_folder, "media", "videos", "manim_code", "480p15"
         )
+
+        if not os.path.exists(video_dir):
+            logger.error(f"Video directory not found: {video_dir}")
+            return jsonify({"error": "Video directory not found"}), 404
 
         video_files = [
             f
@@ -50,19 +71,20 @@ def execute_manim():
         ]
 
         if not video_files:
-            return jsonify({"error": "No video found for the scene."}), 404
+            logger.error("No video files found for the scene")
+            return jsonify({"error": "No video found for the scene"}), 404
 
         latest_video = max(
             video_files, key=lambda f: os.path.getmtime(os.path.join(video_dir, f))
         )
 
         video_url = f"/static/media/videos/manim_code/480p15/{latest_video}"
-
-        print(f"Video URL: {video_url}")
+        logger.info(f"Generated video URL: {video_url}")
 
         return jsonify({"success": True, "video_url": video_url})
 
     except Exception as e:
+        logger.exception("Error in execute_manim")
         return jsonify({"error": str(e)}), 500
 
 
@@ -70,7 +92,10 @@ def execute_manim():
 def generate_manim_code():
     try:
         animation_description = request.json.get("manimPrompt")
-        groq = Groq()
+        if not animation_description:
+            return jsonify({"error": "No animation description provided"}), 400
+
+        logger.info(f"Generating Manim code for: {animation_description[:50]}...")
 
         system_content = """You are a Manim code generator that ONLY outputs executable Python code.
 
@@ -91,12 +116,11 @@ def generate_manim_code():
                 # Your code here
                 pass
         """
-        user_content = animation_description
 
-        chat_completion = groq.chat.completions.create(
+        chat_completion = groq_client.chat.completions.create(
             messages=[
                 {"role": "system", "content": system_content},
-                {"role": "user", "content": user_content},
+                {"role": "user", "content": animation_description},
             ],
             model="llama-3.3-70b-versatile",
             temperature=0.2,
@@ -112,6 +136,9 @@ def generate_manim_code():
         code = code.strip()
 
         if "class MainScene" not in code:
+            logger.warning(
+                "MainScene class not found in generated code, adding template"
+            )
             code = (
                 "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
                 + code
@@ -120,4 +147,20 @@ def generate_manim_code():
         return jsonify({"success": True, "code": code})
 
     except Exception as e:
+        logger.exception("Error in generate_manim_code")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/static/<path:filename>")
+def serve_static(filename):
+    return send_from_directory(app.static_folder, filename)
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template("404.html"), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template("500.html"), 500
