@@ -123,7 +123,8 @@ def generate_manim_code():
                 {"role": "user", "content": animation_description},
             ],
             model="llama-3.3-70b-versatile",
-            temperature=0.2,
+            temperature=0.1,
+            max_tokens=1000,
             stream=False,
         )
 
