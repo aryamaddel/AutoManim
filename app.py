@@ -1,18 +1,13 @@
 import re
 import os
 import subprocess
-import logging
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from groq import Groq
-
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+from google import genai
+from google.genai import types
 
 app = Flask(__name__)
 
-groq_client = Groq()
+gemini_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -43,7 +38,6 @@ def execute_manim():
             return jsonify({"error": "Could not find scene class in the code"}), 400
 
         scene_name = scene_name_match.group(1)
-        logger.info(f"Executing Manim scene: {scene_name}")
 
         result = subprocess.run(
             ["manim", "-ql", scene_path, scene_name],
@@ -53,7 +47,6 @@ def execute_manim():
         )
 
         if result.returncode != 0:
-            logger.error(f"Manim execution failed: {result.stderr}")
             return jsonify({"error": result.stderr}), 500
 
         video_dir = os.path.join(
@@ -61,7 +54,6 @@ def execute_manim():
         )
 
         if not os.path.exists(video_dir):
-            logger.error(f"Video directory not found: {video_dir}")
             return jsonify({"error": "Video directory not found"}), 404
 
         video_files = [
@@ -71,7 +63,6 @@ def execute_manim():
         ]
 
         if not video_files:
-            logger.error("No video files found for the scene")
             return jsonify({"error": "No video found for the scene"}), 404
 
         latest_video = max(
@@ -79,12 +70,9 @@ def execute_manim():
         )
 
         video_url = f"/static/media/videos/manim_code/480p15/{latest_video}"
-        logger.info(f"Generated video URL: {video_url}")
-
         return jsonify({"success": True, "video_url": video_url})
 
     except Exception as e:
-        logger.exception("Error in execute_manim")
         return jsonify({"error": str(e)}), 500
 
 
@@ -94,11 +82,10 @@ def generate_manim_code():
         animation_description = request.json.get("manimPrompt")
         if not animation_description:
             return jsonify({"error": "No animation description provided"}), 400
-
-        logger.info(f"Generating Manim code for: {animation_description[:50]}...")
-
-        system_content = """You are a Manim code generator that ONLY outputs executable Python code.
-
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            return jsonify({"error": "API key not configured"}), 500
+        system_instruction = """You are a Manim code generator that ONLY outputs executable Python code.
         IMPORTANT INSTRUCTIONS:
         1. Return ONLY Python code - no explanations, no thinking, no markdown
         2. Include all necessary imports (from manim import *)
@@ -106,49 +93,62 @@ def generate_manim_code():
         4. Follow exact Manim syntax and conventions
         5. Do not include main blocks or code fences (```)
         6. Ensure animations work correctly with proper syntax
-        7. Do not output ANY text that isn't part of the final code
+        7. Do not output ANY text that isn't part of the final code"""
 
-        Example correct response format:
-        from manim import *
+        model = "gemini-2.5-pro-exp-03-25"
 
-        class MainScene(Scene):
-            def construct(self):
-                # Your code here
-                pass
-        """
-
-        chat_completion = groq_client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": system_content},
-                {"role": "user", "content": animation_description},
-            ],
-            model="llama-3.3-70b-versatile",
-            temperature=0.1,
-            max_tokens=1000,
-            stream=False,
+        generate_content_config = types.GenerateContentConfig(
+            system_instruction=system_instruction,
         )
 
-        code = chat_completion.choices[0].message.content
+        contents = [
+            types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=animation_description)],
+            ),
+        ]
 
-        code = re.sub(r"<think>.*?</think>", "", code, flags=re.DOTALL)
-        code = re.sub(r"^```python\s*", "", code)
-        code = re.sub(r"^```\s*", "", code)
-        code = re.sub(r"\s*```$", "", code)
-        code = code.strip()
-
-        if "class MainScene" not in code:
-            logger.warning(
-                "MainScene class not found in generated code, adding template"
-            )
-            code = (
-                "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
-                + code
+        try:
+            response = gemini_client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=generate_content_config,
             )
 
-        return jsonify({"success": True, "code": code})
+            if not hasattr(response, "text") or response.text is None:
+
+                return (
+                    jsonify(
+                        {"error": "Failed to generate code: Empty response from API"}
+                    ),
+                    500,
+                )
+
+            code = response.text
+
+        except Exception as api_error:
+
+            return jsonify({"error": f"Failed to generate code: {str(api_error)}"}), 500
+
+        if code:
+            code = re.sub(r"<think>.*?</think>", "", code, flags=re.DOTALL)
+            code = re.sub(r"^```python\s*", "", code)
+            code = re.sub(r"^```\s*", "", code)
+            code = re.sub(r"\s*```$", "", code)
+            code = code.strip()
+
+            if "class MainScene" not in code:
+
+                code = (
+                    "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
+                    + code
+                )
+
+            return jsonify({"success": True, "code": code})
+        else:
+            return jsonify({"error": "Failed to generate valid code"}), 500
 
     except Exception as e:
-        logger.exception("Error in generate_manim_code")
         return jsonify({"error": str(e)}), 500
 
 
