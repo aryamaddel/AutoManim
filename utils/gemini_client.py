@@ -10,7 +10,7 @@ class GeminiClient:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY environment variable not set")
         self.client = genai.Client(api_key=self.api_key)
-        self.model = "gemini-2.5-pro-exp-03-25"
+        self.model = "gemini-2.0-flash"
     
     def generate_code(self, prompt):
         system_instruction = """You are a Manim code generator that ONLY outputs executable Python code.

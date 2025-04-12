@@ -5,6 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AutoManim</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- CodeMirror Core CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css" />
+    <!-- CodeMirror Theme - Choose a theme that matches your dark mode UI -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css" />
+    <!-- CodeMirror Core JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <!-- Python Mode for syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <!-- Add-ons for better experience -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/comment/comment.min.js"></script>
+    <style>
+      /* CodeMirror custom styling */
+      .CodeMirror {
+        height: 100%;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        border-radius: 0.375rem;
+      }
+      .CodeMirror-gutters {
+        background-color: #2d3748;
+        border-right: 1px solid #4a5568;
+        border-top-left-radius: 0.375rem;
+        border-bottom-left-radius: 0.375rem;
+      }
+      .CodeMirror-linenumber {
+        color: #a0aec0;
+      }
+      /* Adjust container for CodeMirror */
+      .code-editor-container {
+        min-height: 300px;
+        height: 100%;
+      }
+    </style>
   </head>
 
   <body class="min-h-screen bg-gray-900 text-gray-100 flex flex-col">
@@ -46,19 +82,18 @@
             </svg>
           </button>
         </div>
-        <textarea
-          id="manim-code"
-          class="w-full flex-grow bg-gray-700 text-gray-100 p-3 rounded-md border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 resize-none"
-          rows="10"
-        >
-from manim import *
+        <div id="code-editor-container" class="code-editor-container w-full flex-grow">
+          <textarea
+            id="manim-code"
+            class="hidden"
+          >from manim import *
 
 class CreateCircle(Scene):
     def construct(self):
         circle = Circle()
         circle.set_fill(PINK, opacity=0.5)
-        self.play(Create(circle))</textarea
-        >
+        self.play(Create(circle))</textarea>
+        </div>
       </div>
 
       <div class="bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col">
@@ -182,10 +217,35 @@ class CreateCircle(Scene):
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
+        // Initialize CodeMirror
+        const codeEditor = CodeMirror.fromTextArea(document.getElementById("manim-code"), {
+          mode: "python",
+          theme: "dracula",
+          lineNumbers: true,
+          indentUnit: 4,
+          smartIndent: true,
+          indentWithTabs: false,
+          lineWrapping: true,
+          matchBrackets: true,
+          autoCloseBrackets: true,
+          tabSize: 4,
+          extraKeys: {
+            "Tab": function(cm) {
+              if (cm.somethingSelected()) {
+                cm.indentSelection("add");
+              } else {
+                cm.replaceSelection("    ", "end", "+input");
+              }
+            },
+            "Ctrl-/": "toggleComment",
+            "Cmd-/": "toggleComment"
+          }
+        });
+
         const els = {
           executeButton: document.getElementById("execute-button"),
           generateButton: document.getElementById("generate-button"),
-          manimCode: document.getElementById("manim-code"),
+          codeEditor: codeEditor,
           outputVideo: document.getElementById("output-video"),
           statusMessage: document.getElementById("status-message"),
           statusText: document.getElementById("status-text"),
@@ -225,7 +285,7 @@ class CreateCircle(Scene):
             const res = await fetch("/execute_manim", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code: els.manimCode.value }),
+              body: JSON.stringify({ code: els.codeEditor.getValue() }),
             });
             const data = await res.json();
             if (res.ok) {
@@ -255,7 +315,11 @@ class CreateCircle(Scene):
               body: JSON.stringify({ manimPrompt: els.manimPrompt.value }),
             });
             const data = await res.json();
-            if (res.ok) els.manimCode.value = data.code;
+            if (res.ok) {
+              els.codeEditor.setValue(data.code);
+              // Refresh the editor to update display
+              els.codeEditor.refresh();
+            }
             else throw new Error(data.error || "Failed to generate Manim code");
             showStatus("green", "Code generated successfully!");
           } catch (e) {
