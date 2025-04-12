@@ -136,18 +136,3 @@ def generate_manim_code():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-@app.route("/static/<path:filename>")
-def serve_static(filename):
-    return send_from_directory(app.static_folder, filename)
-
-
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template("404.html"), 404
-
-
-@app.errorhandler(500)
-def server_error(e):
-    return render_template("500.html"), 500
