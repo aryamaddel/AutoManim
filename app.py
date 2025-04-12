@@ -77,45 +77,26 @@ def execute_manim():
 def generate_manim_code():
     try:
         animation_description = request.json.get("manimPrompt")
-        provider = request.json.get("provider")  # Optional provider specification
         
         if not animation_description:
             return jsonify({"error": "No animation description provided"}), 400
         
         code = None
-        provider_used = None
         error_messages = []
         
-        # If provider is specified, use only that provider
-        if provider:
+        # Try Gemini first, then fall back to Groq
+        try:
+            client = GeminiClient()
+            code = client.generate_code(animation_description)
+        except Exception as gemini_error:
+            error_messages.append(f"Gemini API error: {str(gemini_error)}")
+            # Try Groq as fallback
             try:
-                if provider.lower() == "gemini":
-                    client = GeminiClient()
-                elif provider.lower() == "groq":
-                    client = GroqClient()
-                else:
-                    return jsonify({"error": f"Unknown provider: {provider}"}), 400
-                
+                client = GroqClient()
                 code = client.generate_code(animation_description)
-                provider_used = provider
-            except Exception as e:
-                return jsonify({"error": f"{provider.capitalize()} API error: {str(e)}"}), 500
-        else:
-            # Try Gemini first, then fall back to Groq
-            try:
-                client = GeminiClient()
-                code = client.generate_code(animation_description)
-                provider_used = "gemini"
-            except Exception as gemini_error:
-                error_messages.append(f"Gemini API error: {str(gemini_error)}")
-                # Try Groq as fallback
-                try:
-                    client = GroqClient()
-                    code = client.generate_code(animation_description)
-                    provider_used = "groq"
-                except Exception as groq_error:
-                    error_messages.append(f"Groq API error: {str(groq_error)}")
-                    return jsonify({"error": f"Both APIs failed: {', '.join(error_messages)}"}), 500
+            except Exception as groq_error:
+                error_messages.append(f"Groq API error: {str(groq_error)}")
+                return jsonify({"error": f"Both APIs failed: {', '.join(error_messages)}"}), 500
 
         if code:
             code = re.sub(r"<think>.*?</think>", "", code, flags=re.DOTALL)
@@ -130,7 +111,7 @@ def generate_manim_code():
                     + code
                 )
 
-            return jsonify({"success": True, "code": code, "provider": provider_used})
+            return jsonify({"success": True, "code": code})
         else:
             return jsonify({"error": "Failed to generate valid code"}), 500
 
