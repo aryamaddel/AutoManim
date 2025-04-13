@@ -1,0 +1,25 @@
+/* CodeMirror custom styling */
+.CodeMirror {
+  height: 100%;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  border-radius: 0.375rem;
+}
+
+.CodeMirror-gutters {
+  background-color: #2d3748;
+  border-right: 1px solid #4a5568;
+  border-top-left-radius: 0.375rem;
+  border-bottom-left-radius: 0.375rem;
+}
+
+.CodeMirror-linenumber {
+  color: #a0aec0;
+}
+
+/* Adjust container for CodeMirror */
+.code-editor-container {
+  min-height: 300px;
+  height: 100%;
+}

@@ -1,0 +1,34 @@
+/* Chat message styling */
+.chat-container {
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #4a5568 #2d3748;
+}
+
+.chat-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+  background: #2d3748;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+  background-color: #4a5568;
+  border-radius: 6px;
+}
+
+.user-message {
+  background-color: #4a5568;
+  border-radius: 1rem 1rem 0.25rem 1rem;
+  margin-left: auto;
+  max-width: 85%;
+}
+
+.assistant-message {
+  background-color: #2d3748;
+  border-radius: 1rem 1rem 1rem 0.25rem;
+  margin-right: auto;
+  max-width: 85%;
+}
