@@ -70,8 +70,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (role === "user") {
       messageDiv.textContent = message;
     } else {
-      // For code messages from assistant, we could show a preview
-      messageDiv.textContent = "Generated Manim code (see code editor)";
+      // Count lines and show compact preview
+      const codeLines = message.split('\n').filter(line => line.trim() !== '');
+      const numLines = codeLines.length;
+      
+      messageDiv.innerHTML = `<div class="code-preview">
+        <p class="text-xs font-mono flex items-center">
+          <span class="text-indigo-300 mr-2"><i>Code generated:</i></span>
+          <span class="bg-gray-700 px-2 py-1 rounded">${numLines} lines</span>
+        </p>
+      </div>`;
     }
 
     els.chatContainer.appendChild(messageDiv);
