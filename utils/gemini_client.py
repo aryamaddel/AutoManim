@@ -12,7 +12,7 @@ class GeminiClient:
         self.client = genai.Client(api_key=self.api_key)
         self.model = "gemini-2.0-flash"
     
-    def generate_code(self, prompt):
+    def generate_code(self, prompt, chat_history=None):
         system_instruction = """You are a Manim code generator that ONLY outputs executable Python code.
         IMPORTANT INSTRUCTIONS:
         1. Return ONLY Python code - no explanations, no thinking, no markdown
@@ -21,18 +21,36 @@ class GeminiClient:
         4. Follow exact Manim syntax and conventions
         5. Do not include main blocks or code fences (```)
         6. Ensure animations work correctly with proper syntax
-        7. Do not output ANY text that isn't part of the final code"""
+        7. Do not output ANY text that isn't part of the final code
+        8. Consider the entire conversation history to maintain context"""
         
         generate_content_config = types.GenerateContentConfig(
             system_instruction=system_instruction,
         )
         
-        contents = [
+        contents = []
+        
+        # Add chat history if available
+        if chat_history:
+            # Filter to exclude the current prompt
+            past_history = [msg for msg in chat_history if msg["content"] != prompt]
+            
+            for message in past_history:
+                role = "user" if message["role"] == "user" else "model"
+                contents.append(
+                    types.Content(
+                        role=role,
+                        parts=[types.Part.from_text(text=message["content"])],
+                    )
+                )
+        
+        # Add the current prompt
+        contents.append(
             types.Content(
                 role="user",
                 parts=[types.Part.from_text(text=prompt)],
             ),
-        ]
+        )
         
         response = self.client.models.generate_content(
             model=self.model,

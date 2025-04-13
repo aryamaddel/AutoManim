@@ -40,12 +40,49 @@
         min-height: 300px;
         height: 100%;
       }
+      /* Chat message styling */
+      .chat-container {
+        max-height: 300px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #4a5568 #2d3748;
+      }
+      .chat-container::-webkit-scrollbar {
+        width: 8px;
+      }
+      .chat-container::-webkit-scrollbar-track {
+        background: #2d3748;
+      }
+      .chat-container::-webkit-scrollbar-thumb {
+        background-color: #4a5568;
+        border-radius: 6px;
+      }
+      .user-message {
+        background-color: #4a5568;
+        border-radius: 1rem 1rem 0.25rem 1rem;
+        margin-left: auto;
+        max-width: 85%;
+      }
+      .assistant-message {
+        background-color: #2d3748;
+        border-radius: 1rem 1rem 1rem 0.25rem;
+        margin-right: auto;
+        max-width: 85%;
+      }
     </style>
   </head>
 
   <body class="min-h-screen bg-gray-900 text-gray-100 flex flex-col">
     <header class="bg-gray-800 py-4 px-6 shadow-lg">
-      <h1 class="text-2xl font-bold text-indigo-400">AutoManim</h1>
+      <div class="container mx-auto flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-indigo-400">AutoManim</h1>
+        <button
+          id="clear-chat-btn"
+          class="text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 py-1 px-3 rounded-md transition duration-200"
+        >
+          Clear Chat
+        </button>
+      </div>
     </header>
 
     <main
@@ -149,20 +186,58 @@ class CreateCircle(Scene):
           </div>
         </div>
 
-        <div class="mt-6 flex flex-col sm:flex-row gap-4">
-          <div class="flex-grow relative">
-            <input
-              type="text"
-              placeholder="Enter your prompt..."
-              id="manim-prompt"
-              class="w-full py-2 px-4 bg-gray-700 rounded-md border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 outline-none"
-            />
-            <div
-              id="generate-prompt-spinner"
-              class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden"
+        <!-- Chat Interface -->
+        <div class="mt-6 flex flex-col gap-4 flex-grow">
+          <div id="chat-container" class="chat-container flex-grow bg-gray-850 rounded-md p-3 flex flex-col gap-4">
+            <!-- Chat messages will be inserted here -->
+            <div class="text-gray-500 text-center text-sm py-4">
+              Start a conversation with AutoManim
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-4">
+            <div class="flex-grow relative">
+              <input
+                type="text"
+                placeholder="Enter your prompt..."
+                id="manim-prompt"
+                class="w-full py-2 px-4 bg-gray-700 rounded-md border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 outline-none"
+              />
+              <div
+                id="generate-prompt-spinner"
+                class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden"
+              >
+                <svg
+                  class="animate-spin h-5 w-5 text-indigo-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              </div>
+            </div>
+            <button
+              id="generate-button"
+              type="button"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded-md flex items-center justify-center gap-2 transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
+              <span>Send</span>
               <svg
-                class="animate-spin h-5 w-5 text-indigo-400"
+                id="generate-spinner"
+                class="animate-spin h-5 w-5 text-white hidden"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -181,36 +256,8 @@ class CreateCircle(Scene):
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 ></path>
               </svg>
-            </div>
+            </button>
           </div>
-          <button
-            id="generate-button"
-            type="button"
-            class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded-md flex items-center justify-center gap-2 transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <span>Generate Code</span>
-            <svg
-              id="generate-spinner"
-              class="animate-spin h-5 w-5 text-white hidden"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          </button>
         </div>
       </div>
     </main>
@@ -245,6 +292,7 @@ class CreateCircle(Scene):
         const els = {
           executeButton: document.getElementById("execute-button"),
           generateButton: document.getElementById("generate-button"),
+          clearChatButton: document.getElementById("clear-chat-btn"),
           codeEditor: codeEditor,
           outputVideo: document.getElementById("output-video"),
           statusMessage: document.getElementById("status-message"),
@@ -257,6 +305,7 @@ class CreateCircle(Scene):
             "generate-prompt-spinner"
           ),
           videoOverlay: document.getElementById("video-overlay"),
+          chatContainer: document.getElementById("chat-container"),
         };
 
         const toggleLoading = (type, state) => {
@@ -276,6 +325,64 @@ class CreateCircle(Scene):
               () => els.statusMessage.classList.add("hidden"),
               timeout
             );
+        };
+
+        // Add a message to the chat container
+        const addChatMessage = (message, role) => {
+          const messageDiv = document.createElement("div");
+          messageDiv.className = role === "user" 
+            ? "user-message p-3 text-white" 
+            : "assistant-message p-3 text-gray-200";
+          
+          if (role === "user") {
+            messageDiv.textContent = message;
+          } else {
+            // For code messages from assistant, we could show a preview
+            messageDiv.textContent = "Generated Manim code (see code editor)";
+          }
+          
+          els.chatContainer.appendChild(messageDiv);
+          // Scroll to the bottom
+          els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
+        };
+
+        // Fetch chat history on page load
+        const fetchChatHistory = async () => {
+          try {
+            const response = await fetch("/get_chat_history");
+            if (response.ok) {
+              const data = await response.json();
+              if (data.chat_history && data.chat_history.length > 0) {
+                // Clear initial message
+                els.chatContainer.innerHTML = "";
+                
+                // Add messages to chat
+                data.chat_history.forEach(message => {
+                  addChatMessage(message.content, message.role);
+                });
+              }
+            }
+          } catch (error) {
+            console.error("Failed to fetch chat history:", error);
+          }
+        };
+        
+        // Clear chat history
+        const clearChatHistory = async () => {
+          try {
+            const response = await fetch("/clear_chat_history", {
+              method: "POST"
+            });
+            if (response.ok) {
+              els.chatContainer.innerHTML = `
+                <div class="text-gray-500 text-center text-sm py-4">
+                  Start a conversation with AutoManim
+                </div>
+              `;
+            }
+          } catch (error) {
+            console.error("Failed to clear chat history:", error);
+          }
         };
 
         async function executeManim() {
@@ -308,6 +415,10 @@ class CreateCircle(Scene):
             return showStatus("red", "Please enter a prompt", false);
           toggleLoading("generate", true);
           showStatus("indigo", "Generating Manim code...", false);
+          
+          // Add user message to chat interface immediately
+          addChatMessage(els.manimPrompt.value.trim(), "user");
+          
           try {
             const res = await fetch("/generate_manim_code", {
               method: "POST",
@@ -319,6 +430,12 @@ class CreateCircle(Scene):
               els.codeEditor.setValue(data.code);
               // Refresh the editor to update display
               els.codeEditor.refresh();
+              
+              // Add assistant response to chat
+              addChatMessage(data.code, "assistant");
+              
+              // Clear the input field
+              els.manimPrompt.value = "";
             }
             else throw new Error(data.error || "Failed to generate Manim code");
             showStatus("green", "Code generated successfully!");
@@ -329,12 +446,19 @@ class CreateCircle(Scene):
           }
         }
 
+        // Event listeners
         els.executeButton.addEventListener("click", executeManim);
         els.generateButton.addEventListener("click", generateManim);
-        els.manimPrompt.addEventListener(
-          "keypress",
-          (e) => e.key === "Enter" && generateManim()
-        );
+        els.manimPrompt.addEventListener("keypress", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            generateManim();
+          }
+        });
+        els.clearChatButton.addEventListener("click", clearChatHistory);
+        
+        // Load chat history on page load
+        fetchChatHistory();
       });
     </script>
   </body>
