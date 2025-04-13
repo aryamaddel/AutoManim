@@ -1,3 +1,8 @@
+# Git
+.git
+.gitignore
+.github
+
 # Python
 __pycache__/
 *.py[cod]
@@ -26,11 +31,6 @@ venv/
 ENV/
 env/
 
-# Package management
-.python-version
-uv.lock
-pip-lock.txt
-
 # Environment variables
 .env
 .env.*
@@ -47,6 +47,15 @@ static/manim_code.py
 *.swo
 *~
 
+# Documentation and non-essential files
+README.md
+LICENSE
+*.md
+
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Docker specific
+Dockerfile
+.dockerignore
