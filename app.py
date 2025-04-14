@@ -1,12 +1,15 @@
 import re
 import os
 import subprocess
-from flask import Flask, render_template, request, jsonify, send_from_directory, session
+from flask import Flask, render_template, request, jsonify, session
 from utils.gemini_client import GeminiClient
 from utils.groq_client import GroqClient
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_key")  # Set a secret key for sessions
+app.secret_key = os.environ.get(
+    "FLASK_SECRET_KEY", "dev_secret_key"
+)  # Set a secret key for sessions
+
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -78,20 +81,22 @@ def execute_manim():
 def generate_manim_code():
     try:
         animation_description = request.json.get("manimPrompt")
-        
+
         if not animation_description:
             return jsonify({"error": "No animation description provided"}), 400
-        
+
         # Initialize chat history if it doesn't exist
         if "chat_history" not in session:
             session["chat_history"] = []
-            
+
         # Add user message to history
-        session["chat_history"].append({"role": "user", "content": animation_description})
-        
+        session["chat_history"].append(
+            {"role": "user", "content": animation_description}
+        )
+
         code = None
         error_messages = []
-        
+
         # Try Gemini first, then fall back to Groq
         try:
             client = GeminiClient()
@@ -101,10 +106,17 @@ def generate_manim_code():
             # Try Groq as fallback
             try:
                 client = GroqClient()
-                code = client.generate_code(animation_description, session["chat_history"])
+                code = client.generate_code(
+                    animation_description, session["chat_history"]
+                )
             except Exception as groq_error:
                 error_messages.append(f"Groq API error: {str(groq_error)}")
-                return jsonify({"error": f"Both APIs failed: {', '.join(error_messages)}"}), 500
+                return (
+                    jsonify(
+                        {"error": f"Both APIs failed: {', '.join(error_messages)}"}
+                    ),
+                    500,
+                )
 
         if code:
             code = re.sub(r"<think>.*?</think>", "", code, flags=re.DOTALL)
@@ -118,17 +130,15 @@ def generate_manim_code():
                     "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
                     + code
                 )
-                
+
             # Add assistant response to history
             session["chat_history"].append({"role": "assistant", "content": code})
             # Save the session
             session.modified = True
 
-            return jsonify({
-                "success": True, 
-                "code": code,
-                "chat_history": session["chat_history"]
-            })
+            return jsonify(
+                {"success": True, "code": code, "chat_history": session["chat_history"]}
+            )
         else:
             return jsonify({"error": "Failed to generate valid code"}), 500
 
