@@ -6,87 +6,9 @@
   Clear Chat
 </button>
 {% endblock %} {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-  <!-- Chat Interface - Now first column -->
-  <div class="bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col">
-    <h2 class="text-xl font-semibold text-indigo-300 mb-4">Chat</h2>
-    <div
-      id="chat-container"
-      class="chat-container flex-grow bg-gray-850 rounded-md p-3 flex flex-col gap-4 mb-4"
-    >
-      <!-- Chat messages will be inserted here -->
-      <div class="text-gray-500 text-center text-sm py-4">
-        Start a conversation with AutoManim
-      </div>
-    </div>
-
-    <div class="flex flex-col gap-4">
-      <div class="flex-grow relative">
-        <input
-          type="text"
-          placeholder="Enter your prompt..."
-          id="manim-prompt"
-          class="w-full py-2 px-4 bg-gray-700 rounded-md border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 outline-none"
-        />
-        <div
-          id="generate-prompt-spinner"
-          class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden"
-        >
-          <svg
-            class="animate-spin h-5 w-5 text-indigo-400"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            ></circle>
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-        </div>
-      </div>
-      <button
-        id="generate-button"
-        type="button"
-        class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded-md flex items-center justify-center gap-2 transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      >
-        <span>Send</span>
-        <svg
-          id="generate-spinner"
-          class="animate-spin h-5 w-5 text-white hidden"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          ></circle>
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          ></path>
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  <!-- Code Editor - Now middle column -->
-  <div class="bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+  <!-- Code Editor - Left column (wider) -->
+  <div class="bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col lg:col-span-2">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-xl font-semibold text-indigo-300">MANIM Code</h2>
       <button
@@ -117,9 +39,17 @@
         </svg>
       </button>
     </div>
+
+    <!-- Status message shown directly under the header -->
+    <div id="status-message" class="mb-4 hidden">
+      <div class="px-4 py-2 rounded-md" id="status-container">
+        <p id="status-text" class="text-sm">Processing...</p>
+      </div>
+    </div>
+
     <div
       id="code-editor-container"
-      class="code-editor-container w-full flex-grow"
+      class="code-editor-container w-full flex-grow min-h-[500px]"
     >
       <textarea id="manim-code" class="hidden">
 from manim import *
@@ -133,19 +63,105 @@ class CreateCircle(Scene):
     </div>
   </div>
 
-  <!-- Video Player - Now right column -->
-  <div class="bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col">
-    <h2 class="text-xl font-semibold text-indigo-300 mb-4">Generated Video</h2>
-    <div
-      class="relative w-full aspect-video bg-black rounded-md overflow-hidden"
-    >
+  <!-- Right column: Video Player and Chat -->
+  <div class="flex flex-col gap-6 lg:col-span-1">
+    <!-- Video Player -->
+    <div class="bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col">
+      <h2 class="text-xl font-semibold text-indigo-300 mb-4">Generated Video</h2>
       <div
-        id="video-overlay"
-        class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden"
+        class="relative w-full aspect-video bg-black rounded-md overflow-hidden flex items-center justify-center"
       >
-        <div class="text-center">
+        <div
+          id="video-overlay"
+          class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-10"
+        >
+          <div class="text-center">
+            <svg
+              class="animate-spin h-10 w-10 text-indigo-400 mx-auto mb-4"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <p class="text-indigo-300">Generating animation...</p>
+            <p class="text-gray-400 text-sm mt-2">This may take a moment</p>
+          </div>
+        </div>
+        <video id="output-video" controls class="w-full h-full object-contain">
+          <source src="#" type="video/mp4" />
+        </video>
+      </div>
+    </div>
+
+    <!-- Chat Interface -->
+    <div class="bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col flex-grow">
+      <h2 class="text-xl font-semibold text-indigo-300 mb-4">Chat</h2>
+      <div
+        id="chat-container"
+        class="chat-container bg-gray-850 rounded-md p-3 flex flex-col gap-2 mb-4 flex-grow overflow-y-auto min-h-[200px] max-h-[400px]"
+      >
+        <!-- Chat messages will be inserted here -->
+        <div class="text-gray-500 text-center text-sm py-4">
+          Start a conversation with AutoManim
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-auto">
+        <div class="flex-grow relative">
+          <input
+            type="text"
+            placeholder="Enter your prompt..."
+            id="manim-prompt"
+            class="w-full py-2 px-4 bg-gray-700 rounded-md border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 outline-none"
+          />
+          <div
+            id="generate-prompt-spinner"
+            class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden"
+          >
+            <svg
+              class="animate-spin h-5 w-5 text-indigo-400"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+          </div>
+        </div>
+        <button
+          id="generate-button"
+          type="button"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md flex items-center justify-center gap-2 transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 whitespace-nowrap"
+        >
+          <span>Send</span>
           <svg
-            class="animate-spin h-10 w-10 text-indigo-400 mx-auto mb-4"
+            id="generate-spinner"
+            class="animate-spin h-5 w-5 text-white hidden"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -164,17 +180,7 @@ class CreateCircle(Scene):
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             ></path>
           </svg>
-          <p class="text-indigo-300">Generating animation...</p>
-          <p class="text-gray-400 text-sm mt-2">This may take a moment</p>
-        </div>
-      </div>
-      <video id="output-video" controls class="w-full h-full object-contain">
-        <source src="#" type="video/mp4" />
-      </video>
-    </div>
-    <div id="status-message" class="mt-4 text-center hidden">
-      <div class="px-4 py-3 rounded-md" id="status-container">
-        <p id="status-text">Processing...</p>
+        </button>
       </div>
     </div>
   </div>

@@ -1,13 +1,11 @@
 /* Chat message styling */
 .chat-container {
-  max-height: 300px;
-  overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #4a5568 #2d3748;
 }
 
 .chat-container::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .chat-container::-webkit-scrollbar-track {
@@ -21,24 +19,68 @@
 
 .user-message {
   background-color: #4a5568;
-  border-radius: 1rem 1rem 0.25rem 1rem;
+  border-radius: 0.75rem 0.75rem 0.25rem 0.75rem;
   margin-left: auto;
-  max-width: 85%;
+  width: fit-content;
+  max-width: 90%;
   margin-bottom: 0.5rem;
   padding: 0.5rem 0.75rem !important;
 }
 
 .assistant-message {
   background-color: #2d3748;
-  border-radius: 1rem 1rem 1rem 0.25rem;
+  border-radius: 0.75rem 0.75rem 0.75rem 0.25rem;
   margin-right: auto;
-  max-width: 85%;
+  width: fit-content;
+  max-width: 90%;
   margin-bottom: 0.5rem;
   padding: 0.5rem 0.75rem !important;
+}
+
+/* Status message styling */
+#status-message {
+  transition: all 0.3s ease;
+}
+
+#status-container.bg-green-900 {
+  background-color: rgba(6, 78, 59, 0.7);
+  border-left: 3px solid #10b981;
+}
+
+#status-container.bg-red-900 {
+  background-color: rgba(127, 29, 29, 0.7);
+  border-left: 3px solid #ef4444;
+}
+
+#status-container.bg-indigo-900 {
+  background-color: rgba(49, 46, 129, 0.7);
+  border-left: 3px solid #6366f1;
 }
 
 /* Make the code preview more compact */
 .code-preview {
   display: flex;
   align-items: center;
+}
+
+/* Ensure the page takes full height */
+html, body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+main > .container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }

@@ -51,8 +51,8 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const showStatus = (type, message, timeout = 3000) => {
-    els.statusContainer.className = `px-4 py-3 rounded-md bg-${type}-900 bg-opacity-50`;
-    els.statusText.className = `text-${type}-300`;
+    els.statusContainer.className = `px-4 py-2 rounded-md bg-${type}-900`;
+    els.statusText.className = `text-${type}-300 text-sm`;
     els.statusText.textContent = message;
     els.statusMessage.classList.remove("hidden");
     if (timeout)

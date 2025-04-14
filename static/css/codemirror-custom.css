@@ -20,6 +20,17 @@
 
 /* Adjust container for CodeMirror */
 .code-editor-container {
-  min-height: 300px;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* For fullscreen mode */
+.CodeMirror-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: auto;
+  z-index: 9999;
 }
