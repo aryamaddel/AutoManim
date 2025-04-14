@@ -31,7 +31,7 @@ def execute_manim():
         with open(scene_path, "w") as f:
             f.write(manim_code)
 
-        scene_name_match = re.search(r"class\s+(\w+)\(Scene\):", manim_code)
+        scene_name_match = re.search(r"class\s+(\w+)\((.*?)Scene\):", manim_code)
         if not scene_name_match:
             return jsonify({"error": "Could not find scene class in the code"}), 400
 
