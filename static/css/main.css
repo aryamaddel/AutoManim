@@ -5,36 +5,40 @@
 }
 
 .chat-container::-webkit-scrollbar {
-  width: 6px;
+  width: 4px; /* Thinner scrollbar */
 }
 
 .chat-container::-webkit-scrollbar-track {
-  background: #2d3748;
+  background: rgba(45, 55, 72, 0.3); /* More transparent */
 }
 
 .chat-container::-webkit-scrollbar-thumb {
-  background-color: #4a5568;
-  border-radius: 6px;
+  background-color: rgba(74, 85, 104, 0.6); /* Semi-transparent */
+  border-radius: 4px;
 }
 
 .user-message {
-  background-color: #4a5568;
-  border-radius: 0.75rem 0.75rem 0.25rem 0.75rem;
+  background-color: rgba(74, 85, 104, 0.7); /* More transparent */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 0.5rem 0.5rem 0.25rem 0.5rem;
   margin-left: auto;
   width: fit-content;
   max-width: 90%;
-  margin-bottom: 0.5rem;
-  padding: 0.5rem 0.75rem !important;
+  margin-bottom: 0.35rem; /* Reduced margin */
+  padding: 0.35rem 0.5rem !important; /* Reduced padding */
 }
 
 .assistant-message {
-  background-color: #2d3748;
-  border-radius: 0.75rem 0.75rem 0.75rem 0.25rem;
+  background-color: rgba(45, 55, 72, 0.7); /* More transparent */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 0.5rem 0.5rem 0.5rem 0.25rem;
   margin-right: auto;
   width: fit-content;
   max-width: 90%;
-  margin-bottom: 0.5rem;
-  padding: 0.5rem 0.75rem !important;
+  margin-bottom: 0.35rem; /* Reduced margin */
+  padding: 0.35rem 0.5rem !important; /* Reduced padding */
 }
 
 /* Status message styling */
@@ -43,18 +47,18 @@
 }
 
 #status-container.bg-green-900 {
-  background-color: rgba(6, 78, 59, 0.7);
-  border-left: 3px solid #10b981;
+  background-color: rgba(6, 78, 59, 0.5); /* More transparent */
+  border-left: 2px solid #10b981; /* Thinner border */
 }
 
 #status-container.bg-red-900 {
-  background-color: rgba(127, 29, 29, 0.7);
-  border-left: 3px solid #ef4444;
+  background-color: rgba(127, 29, 29, 0.5); /* More transparent */
+  border-left: 2px solid #ef4444; /* Thinner border */
 }
 
 #status-container.bg-indigo-900 {
-  background-color: rgba(49, 46, 129, 0.7);
-  border-left: 3px solid #6366f1;
+  background-color: rgba(49, 46, 129, 0.5); /* More transparent */
+  border-left: 2px solid #6366f1; /* Thinner border */
 }
 
 /* Make the code preview more compact */
@@ -92,33 +96,34 @@ main > .container {
 
 #log-display.active {
   opacity: 1;
-  max-height: 120px; /* Allow 4-5 lines of text */
+  max-height: 100px; /* Reduced height */
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #4b5563 #1f2937;
 }
 
 #log-display.active::-webkit-scrollbar {
-  width: 6px;
+  width: 4px; /* Thinner scrollbar */
 }
 
 #log-display.active::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: rgba(31, 41, 55, 0.3); /* More transparent */
 }
 
 #log-display.active::-webkit-scrollbar-thumb {
-  background-color: #4b5563;
-  border-radius: 6px;
+  background-color: rgba(75, 85, 99, 0.6); /* Semi-transparent */
+  border-radius: 4px;
 }
 
 .log-line {
   transition: opacity 0.5s ease;
-  line-height: 1.5;
+  line-height: 1.4; /* Reduced line height */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   position: relative;
   padding-left: 15px;
+  font-size: 0.7rem; /* Smaller font */
 }
 
 .log-line::before {
@@ -138,4 +143,51 @@ main > .container {
 
 .log-line.success {
   color: #6ee7b7;
+}
+
+/* Glass UI elements */
+.glass-panel {
+  background-color: rgba(17, 24, 39, 0.7) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+}
+
+.glass-input {
+  background-color: rgba(55, 65, 81, 0.5) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.glass-button {
+  background-color: rgba(79, 70, 229, 0.8) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.glass-button:hover {
+  background-color: rgba(67, 56, 202, 0.9) !important;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5) !important;
+}
+
+/* Compact layout */
+.compact-p {
+  padding: 0.75rem !important;
+}
+
+.compact-py {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.compact-gap {
+  gap: 0.5rem !important;
+}
+
+.compact-mb {
+  margin-bottom: 0.5rem !important;
 }
