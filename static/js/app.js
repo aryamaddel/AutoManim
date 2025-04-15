@@ -42,6 +42,8 @@ document.addEventListener("DOMContentLoaded", () => {
     generatePromptSpinner: document.getElementById("generate-prompt-spinner"),
     videoOverlay: document.getElementById("video-overlay"),
     chatContainer: document.getElementById("chat-container"),
+    logDisplay: document.getElementById("log-display"),
+    logLines: document.getElementById("log-lines"),
   };
 
   const toggleLoading = (type, state) => {
@@ -71,9 +73,11 @@ document.addEventListener("DOMContentLoaded", () => {
       messageDiv.textContent = message;
     } else {
       // Count lines and show compact preview
-      const codeLines = message.split('\n').filter(line => line.trim() !== '');
+      const codeLines = message
+        .split("\n")
+        .filter((line) => line.trim() !== "");
       const numLines = codeLines.length;
-      
+
       messageDiv.innerHTML = `<div class="code-preview">
         <p class="text-xs font-mono flex items-center">
           <span class="text-indigo-300 mr-2"><i>Code generated:</i></span>
@@ -126,27 +130,140 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  // Log display management
+  let logEventSource = null;
+  const maxLogLines = 4;
+
+  const addLogLine = (text, type = "info") => {
+    // Create a new log line element
+    const logLine = document.createElement("div");
+    logLine.className = `log-line ${type}`;
+    logLine.textContent = text;
+
+    // Add the new line
+    els.logLines.appendChild(logLine);
+
+    // Check if we need to remove old lines
+    const lines = els.logLines.querySelectorAll(".log-line");
+    if (lines.length > maxLogLines) {
+      // Add fade-out class to the oldest line
+      lines[0].classList.add("fade-out");
+
+      // Remove after animation completes
+      setTimeout(() => {
+        if (lines[0].parentNode === els.logLines) {
+          els.logLines.removeChild(lines[0]);
+        }
+      }, 500); // Match the CSS transition duration
+    }
+  };
+
+  const startLogStream = () => {
+    // Close any existing stream
+    if (logEventSource) {
+      logEventSource.close();
+    }
+
+    // Clear existing log lines
+    els.logLines.innerHTML = "";
+
+    // Show the log display
+    els.logDisplay.classList.add("active");
+
+    // Add an initial line
+    addLogLine("Starting Manim execution...");
+
+    // Connect to SSE endpoint
+    logEventSource = new EventSource("/stream_logs");
+
+    logEventSource.onmessage = (event) => {
+      if (event.data === "HEARTBEAT") {
+        return; // Ignore heartbeats
+      }
+
+      if (event.data === "STREAM_END") {
+        endLogStream();
+        return;
+      }
+
+      if (event.data.startsWith("VIDEO_READY:")) {
+        const videoUrl = event.data.substring("VIDEO_READY:".length);
+        // Update video source and play
+        els.outputVideo.querySelector("source").src =
+          videoUrl + "?t=" + Date.now();
+        els.outputVideo.load();
+        els.outputVideo.play();
+
+        // Add success message
+        addLogLine("Animation rendered successfully!", "success");
+
+        // Turn off loading state in UI
+        toggleLoading("execute", false);
+        showStatus("green", "Animation generated successfully!");
+
+        // Keep log display visible
+        return;
+      }
+
+      if (event.data.startsWith("ERROR:")) {
+        // Handle errors
+        const errorMessage = event.data.substring("ERROR:".length);
+        addLogLine(errorMessage.trim(), "error");
+        showStatus("red", errorMessage.trim(), false);
+        toggleLoading("execute", false);
+        return;
+      }
+
+      // Regular log line
+      addLogLine(event.data);
+    };
+
+    logEventSource.onerror = () => {
+      console.error("Log stream error");
+      addLogLine("Connection lost. Check server status.", "error");
+      endLogStream();
+      toggleLoading("execute", false);
+    };
+  };
+
+  const endLogStream = () => {
+    if (logEventSource) {
+      logEventSource.close();
+      logEventSource = null;
+    }
+
+    // Add a final line after a brief delay
+    setTimeout(() => {
+      addLogLine("Execution complete", "success");
+    }, 500);
+  };
+
   async function executeManim() {
     toggleLoading("execute", true);
     showStatus("indigo", "Executing Manim code...", false);
+
+    // Start the log stream
+    startLogStream();
+
     try {
       const res = await fetch("/execute_manim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: els.codeEditor.getValue() }),
       });
+
       const data = await res.json();
-      if (res.ok) {
-        els.outputVideo.querySelector("source").src =
-          data.video_url + "?t=" + Date.now();
-        els.outputVideo.load();
-        els.outputVideo.play();
-        showStatus("green", "Animation generated successfully!");
-      } else throw new Error(data.error || "Failed to execute Manim code");
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to execute Manim code");
+      }
+
+      // Note: We don't end loading here as it happens via the log stream
     } catch (e) {
+      addLogLine(e.message, "error");
       showStatus("red", e.message, false);
-    } finally {
       toggleLoading("execute", false);
+      els.logDisplay.classList.remove("active");
+      endLogStream();
     }
   }
 

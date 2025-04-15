@@ -84,3 +84,58 @@ main > .container {
   display: flex;
   flex-direction: column;
 }
+
+/* Log display styling */
+#log-display {
+  transition: all 0.3s ease;
+}
+
+#log-display.active {
+  opacity: 1;
+  max-height: 120px; /* Allow 4-5 lines of text */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #1f2937;
+}
+
+#log-display.active::-webkit-scrollbar {
+  width: 6px;
+}
+
+#log-display.active::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+#log-display.active::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 6px;
+}
+
+.log-line {
+  transition: opacity 0.5s ease;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  padding-left: 15px;
+}
+
+.log-line::before {
+  content: ">";
+  position: absolute;
+  left: 0;
+  color: #818cf8;
+}
+
+.log-line.fade-out {
+  opacity: 0;
+}
+
+.log-line.error {
+  color: #f87171;
+}
+
+.log-line.success {
+  color: #6ee7b7;
+}
