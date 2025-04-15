@@ -1,33 +1,21 @@
-/* Core elements and layout */
-html, body {
+/* Minimal core layout */
+html, body, main, main > .container {
   height: 100%;
-}
-
-body {
   display: flex;
   flex-direction: column;
 }
 
-main {
+main, main > .container {
   flex-grow: 1;
-  display: flex;
-  flex-direction: column;
 }
 
-main > .container {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Simplified scrollbar styles for all scrollable elements */
-.chat-container,
-#log-display.active,
-.CodeMirror-vscrollbar {
+/* Universal thin scrollbars */
+.chat-container, #log-display.active, .CodeMirror-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #4a5568 #2d3748;
 }
 
+/* Webkit scrollbar - single definition */
 .chat-container::-webkit-scrollbar,
 #log-display.active::-webkit-scrollbar,
 .CodeMirror-vscrollbar::-webkit-scrollbar {
@@ -47,39 +35,36 @@ main > .container {
   border-radius: 4px;
 }
 
-/* Chat message styling - simplified */
+/* Simplified message bubbles */
 .user-message, .assistant-message {
-  background-color: rgba(45, 55, 72, 0.7);
-  border-radius: 0.5rem;
   width: fit-content;
   max-width: 90%;
   margin-bottom: 0.5rem;
-  padding: 0.5rem !important;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
 }
 
 .user-message {
   background-color: rgba(74, 85, 104, 0.7);
   margin-left: auto;
-  border-radius: 0.5rem 0.5rem 0.25rem 0.5rem;
 }
 
 .assistant-message {
+  background-color: rgba(45, 55, 72, 0.7);
   margin-right: auto;
-  border-radius: 0.5rem 0.5rem 0.5rem 0.25rem;
 }
 
-/* Status message styling - simplified */
+/* Minimal status container */
 #status-message {
   transition: all 0.3s ease;
 }
 
-/* Consolidated status container styles */
 #status-container {
   border-left: 2px solid;
 }
 
 #status-container.bg-green-900 {
-  background-color: rgba(6, 78, 59, 0.5);
+  background-color: rgba(6, 78, 59, 0.5); 
   border-color: #10b981;
 }
 
@@ -93,9 +78,9 @@ main > .container {
   border-color: #6366f1;
 }
 
-/* Log display styling - simplified */
+/* Essential log display */
 #log-display {
-  transition: all 0.3s ease;
+  transition: opacity 0.3s;
 }
 
 #log-display.active {
@@ -105,14 +90,13 @@ main > .container {
 }
 
 .log-line {
-  transition: opacity 0.5s ease;
+  padding-left: 15px;
+  position: relative;
+  font-size: 0.7rem;
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  position: relative;
-  padding-left: 15px;
-  font-size: 0.7rem;
 }
 
 .log-line::before {
@@ -122,23 +106,14 @@ main > .container {
   color: #818cf8;
 }
 
-.log-line.fade-out {
-  opacity: 0;
-}
+.log-line.error { color: #f87171; }
+.log-line.success { color: #6ee7b7; }
+.log-line.fade-out { opacity: 0; }
 
-.log-line.error {
-  color: #f87171;
-}
-
-.log-line.success {
-  color: #6ee7b7;
-}
-
-/* Glass UI elements - simplified */
+/* Minimal UI elements */
 .glass-panel {
   background-color: rgba(17, 24, 39, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .glass-input {
@@ -148,15 +123,14 @@ main > .container {
 
 .glass-button {
   background-color: rgba(79, 70, 229, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  transition: all 0.3s ease;
+  transition: all 0.2s;
 }
 
 .glass-button:hover {
   background-color: rgba(67, 56, 202, 0.9);
 }
 
-/* Compact layout helpers */
+/* Layout helpers */
 .compact-p { padding: 0.75rem; }
 .compact-gap { gap: 0.5rem; }
 .compact-mb { margin-bottom: 0.5rem; }
