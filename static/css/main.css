@@ -1,73 +1,4 @@
-/* Chat message styling */
-.chat-container {
-  scrollbar-width: thin;
-  scrollbar-color: #4a5568 #2d3748;
-}
-
-.chat-container::-webkit-scrollbar {
-  width: 4px; /* Thinner scrollbar */
-}
-
-.chat-container::-webkit-scrollbar-track {
-  background: rgba(45, 55, 72, 0.3); /* More transparent */
-}
-
-.chat-container::-webkit-scrollbar-thumb {
-  background-color: rgba(74, 85, 104, 0.6); /* Semi-transparent */
-  border-radius: 4px;
-}
-
-.user-message {
-  background-color: rgba(74, 85, 104, 0.7); /* More transparent */
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-radius: 0.5rem 0.5rem 0.25rem 0.5rem;
-  margin-left: auto;
-  width: fit-content;
-  max-width: 90%;
-  margin-bottom: 0.35rem; /* Reduced margin */
-  padding: 0.35rem 0.5rem !important; /* Reduced padding */
-}
-
-.assistant-message {
-  background-color: rgba(45, 55, 72, 0.7); /* More transparent */
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-radius: 0.5rem 0.5rem 0.5rem 0.25rem;
-  margin-right: auto;
-  width: fit-content;
-  max-width: 90%;
-  margin-bottom: 0.35rem; /* Reduced margin */
-  padding: 0.35rem 0.5rem !important; /* Reduced padding */
-}
-
-/* Status message styling */
-#status-message {
-  transition: all 0.3s ease;
-}
-
-#status-container.bg-green-900 {
-  background-color: rgba(6, 78, 59, 0.5); /* More transparent */
-  border-left: 2px solid #10b981; /* Thinner border */
-}
-
-#status-container.bg-red-900 {
-  background-color: rgba(127, 29, 29, 0.5); /* More transparent */
-  border-left: 2px solid #ef4444; /* Thinner border */
-}
-
-#status-container.bg-indigo-900 {
-  background-color: rgba(49, 46, 129, 0.5); /* More transparent */
-  border-left: 2px solid #6366f1; /* Thinner border */
-}
-
-/* Make the code preview more compact */
-.code-preview {
-  display: flex;
-  align-items: center;
-}
-
-/* Ensure the page takes full height */
+/* Core elements and layout */
 html, body {
   height: 100%;
 }
@@ -89,41 +20,99 @@ main > .container {
   flex-direction: column;
 }
 
-/* Log display styling */
+/* Simplified scrollbar styles for all scrollable elements */
+.chat-container,
+#log-display.active,
+.CodeMirror-vscrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #4a5568 #2d3748;
+}
+
+.chat-container::-webkit-scrollbar,
+#log-display.active::-webkit-scrollbar,
+.CodeMirror-vscrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat-container::-webkit-scrollbar-track,
+#log-display.active::-webkit-scrollbar-track,
+.CodeMirror-vscrollbar::-webkit-scrollbar-track {
+  background: rgba(45, 55, 72, 0.3);
+}
+
+.chat-container::-webkit-scrollbar-thumb,
+#log-display.active::-webkit-scrollbar-thumb,
+.CodeMirror-vscrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(74, 85, 104, 0.6);
+  border-radius: 4px;
+}
+
+/* Chat message styling - simplified */
+.user-message, .assistant-message {
+  background-color: rgba(45, 55, 72, 0.7);
+  border-radius: 0.5rem;
+  width: fit-content;
+  max-width: 90%;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem !important;
+}
+
+.user-message {
+  background-color: rgba(74, 85, 104, 0.7);
+  margin-left: auto;
+  border-radius: 0.5rem 0.5rem 0.25rem 0.5rem;
+}
+
+.assistant-message {
+  margin-right: auto;
+  border-radius: 0.5rem 0.5rem 0.5rem 0.25rem;
+}
+
+/* Status message styling - simplified */
+#status-message {
+  transition: all 0.3s ease;
+}
+
+/* Consolidated status container styles */
+#status-container {
+  border-left: 2px solid;
+}
+
+#status-container.bg-green-900 {
+  background-color: rgba(6, 78, 59, 0.5);
+  border-color: #10b981;
+}
+
+#status-container.bg-red-900 {
+  background-color: rgba(127, 29, 29, 0.5);
+  border-color: #ef4444;
+}
+
+#status-container.bg-indigo-900 {
+  background-color: rgba(49, 46, 129, 0.5);
+  border-color: #6366f1;
+}
+
+/* Log display styling - simplified */
 #log-display {
   transition: all 0.3s ease;
 }
 
 #log-display.active {
   opacity: 1;
-  max-height: 100px; /* Reduced height */
+  max-height: 100px;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #4b5563 #1f2937;
-}
-
-#log-display.active::-webkit-scrollbar {
-  width: 4px; /* Thinner scrollbar */
-}
-
-#log-display.active::-webkit-scrollbar-track {
-  background: rgba(31, 41, 55, 0.3); /* More transparent */
-}
-
-#log-display.active::-webkit-scrollbar-thumb {
-  background-color: rgba(75, 85, 99, 0.6); /* Semi-transparent */
-  border-radius: 4px;
 }
 
 .log-line {
   transition: opacity 0.5s ease;
-  line-height: 1.4; /* Reduced line height */
+  line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   position: relative;
   padding-left: 15px;
-  font-size: 0.7rem; /* Smaller font */
+  font-size: 0.7rem;
 }
 
 .log-line::before {
@@ -145,49 +134,29 @@ main > .container {
   color: #6ee7b7;
 }
 
-/* Glass UI elements */
+/* Glass UI elements - simplified */
 .glass-panel {
-  background-color: rgba(17, 24, 39, 0.7) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+  background-color: rgba(17, 24, 39, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .glass-input {
-  background-color: rgba(55, 65, 81, 0.5) !important;
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(55, 65, 81, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-button {
-  background-color: rgba(79, 70, 229, 0.8) !important;
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
-  border: 1px solid rgba(139, 92, 246, 0.3) !important;
-  transition: all 0.3s ease !important;
+  background-color: rgba(79, 70, 229, 0.8);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  transition: all 0.3s ease;
 }
 
 .glass-button:hover {
-  background-color: rgba(67, 56, 202, 0.9) !important;
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5) !important;
+  background-color: rgba(67, 56, 202, 0.9);
 }
 
-/* Compact layout */
-.compact-p {
-  padding: 0.75rem !important;
-}
-
-.compact-py {
-  padding-top: 0.5rem !important;
-  padding-bottom: 0.5rem !important;
-}
-
-.compact-gap {
-  gap: 0.5rem !important;
-}
-
-.compact-mb {
-  margin-bottom: 0.5rem !important;
-}
+/* Compact layout helpers */
+.compact-p { padding: 0.75rem; }
+.compact-gap { gap: 0.5rem; }
+.compact-mb { margin-bottom: 0.5rem; }

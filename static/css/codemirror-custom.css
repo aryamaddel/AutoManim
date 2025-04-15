@@ -1,35 +1,32 @@
-/* CodeMirror custom styling */
+/* CodeMirror core styling - simplified */
 .CodeMirror {
   height: 100%;
   font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", monospace;
-  font-size: 13px; /* Smaller font size */
-  line-height: 1.4; /* Reduced line height */
+  font-size: 13px;
+  line-height: 1.4;
   border-radius: 0.375rem;
-  background-color: rgba(25, 30, 40, 0.8) !important; /* Transparent background */
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(74, 85, 104, 0.2); /* Subtle border */
+  background-color: rgba(25, 30, 40, 0.8);
+  border: 1px solid rgba(74, 85, 104, 0.2);
 }
 
 .CodeMirror-gutters {
-  background-color: rgba(45, 55, 72, 0.5); /* More transparent */
-  border-right: 1px solid rgba(74, 85, 104, 0.3); /* Subtler border */
+  background-color: rgba(45, 55, 72, 0.5);
+  border-right: 1px solid rgba(74, 85, 104, 0.3);
   border-top-left-radius: 0.375rem;
   border-bottom-left-radius: 0.375rem;
 }
 
 .CodeMirror-linenumber {
-  color: rgba(160, 174, 192, 0.7); /* More transparent */
-  font-size: 0.85em; /* Smaller line numbers */
+  color: rgba(160, 174, 192, 0.7);
 }
 
-/* Adjust container for CodeMirror */
+/* Container for CodeMirror */
 .code-editor-container {
   display: flex;
   flex-direction: column;
 }
 
-/* For fullscreen mode */
+/* Fullscreen mode - essential for functionality */
 .CodeMirror-fullscreen {
   position: fixed;
   top: 0;
@@ -40,6 +37,7 @@
   z-index: 9999;
 }
 
+/* Simple color overrides for syntax highlighting */
 .cm-s-dracula span.cm-property {
   color: #ff79c6;
 }
@@ -48,24 +46,10 @@
   color: #bd93f9;
 }
 
-/* Adjust scrollbar in CodeMirror */
-.CodeMirror-scrollbar-filler, .CodeMirror-gutter-filler {
+/* Clean up scrollbar filler */
+.CodeMirror-scrollbar-filler, 
+.CodeMirror-gutter-filler {
   background-color: transparent;
 }
 
-.CodeMirror-vscrollbar::-webkit-scrollbar,
-.CodeMirror-hscrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-
-.CodeMirror-vscrollbar::-webkit-scrollbar-track,
-.CodeMirror-hscrollbar::-webkit-scrollbar-track {
-  background: rgba(45, 55, 72, 0.3);
-}
-
-.CodeMirror-vscrollbar::-webkit-scrollbar-thumb,
-.CodeMirror-hscrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(74, 85, 104, 0.6);
-  border-radius: 4px;
-}
+/* Scrollbar styling handled in main.css */
