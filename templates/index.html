@@ -7,7 +7,7 @@
 </button>
 {% endblock %} {% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 h-full">
-  <!-- Code Editor - Left column (reduced width) -->
+  <!-- Code Editor - Left column -->
   <div class="glass-panel border border-slate-700/30 rounded-xl shadow-xl compact-p flex flex-col lg:col-span-3">
     <div class="flex justify-between items-center compact-mb">
       <h2 class="text-lg font-bold text-indigo-300 flex items-center">
@@ -35,32 +35,21 @@
             fill="none"
             viewBox="0 0 24 24"
           >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            ></circle>
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
         </button>
       </div>
     </div>
 
-    <!-- Status message shown directly under the header -->
+    <!-- Status message -->
     <div id="status-message" class="compact-mb hidden">
       <div class="px-3 py-1 rounded-md" id="status-container">
         <p id="status-text" class="text-xs">Processing...</p>
       </div>
     </div>
 
-    <!-- Code Preview (visible when editor is hidden) -->
+    <!-- Code Preview -->
     <div id="code-preview" class="bg-gradient-to-b from-slate-800/60 to-slate-900/70 rounded-lg flex-grow flex flex-col items-center justify-center p-6 border border-slate-700/30">
       <div class="text-center max-w-md">
         <svg class="w-10 h-10 text-indigo-400 mx-auto mb-3 opacity-80" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -81,10 +70,7 @@
     </div>
 
     <!-- Code Editor (hidden by default) -->
-    <div
-      id="code-editor-container"
-      class="code-editor-container w-full flex-grow min-h-[450px] hidden"
-    >
+    <div id="code-editor-container" class="code-editor-container w-full flex-grow min-h-[450px] hidden">
       <textarea id="manim-code" class="hidden">
 from manim import *
 
@@ -92,8 +78,7 @@ class CreateCircle(Scene):
     def construct(self):
         circle = Circle()
         circle.set_fill(PINK, opacity=0.5)
-        self.play(Create(circle))</textarea
-      >
+        self.play(Create(circle))</textarea>
     </div>
   </div>
 
@@ -107,33 +92,14 @@ class CreateCircle(Scene):
         </svg>
         Generated Video
       </h2>
-      <div
-        class="relative w-full aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-md overflow-hidden flex items-center justify-center mb-2 border border-slate-700/30"
-      >
-        <div
-          id="video-overlay"
-          class="absolute inset-0 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden z-10"
-        >
+      
+      <!-- Video container with overlay -->
+      <div class="relative w-full aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-md overflow-hidden flex items-center justify-center mb-2 border border-slate-700/30">
+        <div id="video-overlay" class="absolute inset-0 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden z-10">
           <div class="text-center">
-            <svg
-              class="animate-spin h-10 w-10 text-indigo-400 mx-auto mb-3"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
+            <svg class="animate-spin h-10 w-10 text-indigo-400 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             <p class="text-indigo-300 text-sm font-medium">Generating animation...</p>
             <p class="text-gray-400 text-xs mt-2">This may take a moment</p>
@@ -144,13 +110,9 @@ class CreateCircle(Scene):
         </video>
       </div>
 
-      <!-- Terminal-style console for logs -->
-      <div
-        class="bg-slate-900/70 backdrop-blur-sm rounded-md border border-slate-800 overflow-hidden"
-      >
-        <div
-          class="flex justify-between items-center px-3 py-1.5 bg-slate-800/80 border-b border-slate-700"
-        >
+      <!-- Terminal console -->
+      <div class="bg-slate-900/70 backdrop-blur-sm rounded-md border border-slate-800 overflow-hidden">
+        <div class="flex justify-between items-center px-3 py-1.5 bg-slate-800/80 border-b border-slate-700">
           <div class="flex items-center gap-1.5">
             <div class="w-2 h-2 rounded-full bg-red-500 opacity-80"></div>
             <div class="w-2 h-2 rounded-full bg-yellow-500 opacity-80"></div>
@@ -159,15 +121,8 @@ class CreateCircle(Scene):
           <span class="text-xs text-slate-400 font-mono">Console</span>
           <div class="w-8"></div>
         </div>
-
-        <div
-          id="log-display"
-          class="transition-opacity duration-300 opacity-0 max-h-0 overflow-hidden"
-        >
-          <div
-            id="log-lines"
-            class="p-2 font-mono text-xs text-emerald-300 space-y-1"
-          ></div>
+        <div id="log-display" class="transition-opacity duration-300 opacity-0 max-h-0 overflow-hidden">
+          <div id="log-lines" class="p-2 font-mono text-xs text-emerald-300 space-y-1"></div>
         </div>
       </div>
     </div>
@@ -180,11 +135,9 @@ class CreateCircle(Scene):
         </svg>
         Chat
       </h2>
-      <div
-        id="chat-container"
-        class="chat-container bg-gradient-to-b from-slate-800/60 to-slate-900/70 backdrop-blur-sm rounded-lg p-3 flex flex-col gap-2 compact-mb flex-grow overflow-y-auto min-h-[180px] max-h-[350px] border border-slate-700/30"
-      >
-        <!-- Chat messages will be inserted here -->
+      
+      <!-- Chat messages container -->
+      <div id="chat-container" class="chat-container bg-gradient-to-b from-slate-800/60 to-slate-900/70 backdrop-blur-sm rounded-lg p-3 flex flex-col gap-2 compact-mb flex-grow overflow-y-auto min-h-[180px] max-h-[350px] border border-slate-700/30">
         <div class="text-slate-500 text-center text-sm py-6 flex flex-col items-center">
           <svg class="w-8 h-8 mb-2 opacity-60" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
             <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"></path>
@@ -193,66 +146,22 @@ class CreateCircle(Scene):
         </div>
       </div>
 
+      <!-- Chat input -->
       <div class="flex gap-2 mt-auto">
         <div class="flex-grow relative">
-          <input
-            type="text"
-            placeholder="Enter your prompt..."
-            id="manim-prompt"
-            class="w-full py-2 px-4 glass-input rounded-md text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:ring-opacity-50 outline-none"
-          />
-          <div
-            id="generate-prompt-spinner"
-            class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden"
-          >
-            <svg
-              class="animate-spin h-4 w-4 text-indigo-400"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
+          <input type="text" placeholder="Enter your prompt..." id="manim-prompt" class="w-full py-2 px-4 glass-input rounded-md text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:ring-opacity-50 outline-none" />
+          <div id="generate-prompt-spinner" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
+            <svg class="animate-spin h-4 w-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
           </div>
         </div>
-        <button
-          id="generate-button"
-          type="button"
-          class="glass-button text-white py-2 px-4 rounded-md flex items-center justify-center gap-1 transition duration-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 whitespace-nowrap text-sm"
-        >
+        <button id="generate-button" type="button" class="glass-button text-white py-2 px-4 rounded-md flex items-center justify-center gap-1 transition duration-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 whitespace-nowrap text-sm">
           <span>Send</span>
-          <svg
-            id="generate-spinner"
-            class="animate-spin h-4 w-4 text-white hidden"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            ></circle>
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
+          <svg id="generate-spinner" class="animate-spin h-4 w-4 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
         </button>
       </div>
@@ -260,258 +169,3 @@ class CreateCircle(Scene):
   </div>
 </div>
 {% endblock %}
-
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    // Initialize CodeMirror
-    const codeEditor = CodeMirror.fromTextArea(
-      document.getElementById("manim-code"),
-      {
-        mode: "python",
-        theme: "dracula",
-        lineNumbers: true,
-        indentUnit: 4,
-        smartIndent: true,
-        indentWithTabs: false,
-        lineWrapping: true,
-        matchBrackets: true,
-        autoCloseBrackets: true,
-        tabSize: 4,
-        extraKeys: {
-          Tab: function (cm) {
-            if (cm.somethingSelected()) {
-              cm.indentSelection("add");
-            } else {
-              cm.replaceSelection("    ", "end", "+input");
-            }
-          },
-          "Ctrl-/": "toggleComment",
-          "Cmd-/": "toggleComment",
-        },
-      }
-    );
-
-    const els = {
-      executeButton: document.getElementById("execute-button"),
-      generateButton: document.getElementById("generate-button"),
-      clearChatButton: document.getElementById("clear-chat-btn"),
-      toggleEditorButton: document.getElementById("toggle-editor-button"),
-      toggleEditorText: document.getElementById("toggle-editor-text"),
-      previewShowEditor: document.getElementById("preview-show-editor"),
-      codeEditorContainer: document.getElementById("code-editor-container"),
-      codePreview: document.getElementById("code-preview"),
-      codePreviewLines: document.getElementById("code-preview-lines"),
-      codeEditor: codeEditor,
-      outputVideo: document.getElementById("output-video"),
-      statusMessage: document.getElementById("status-message"),
-      statusText: document.getElementById("status-text"),
-      statusContainer: document.getElementById("status-container"),
-      manimPrompt: document.getElementById("manim-prompt"),
-      executeSpinner: document.getElementById("execute-spinner"),
-      generateSpinner: document.getElementById("generate-spinner"),
-      generatePromptSpinner: document.getElementById("generate-prompt-spinner"),
-      videoOverlay: document.getElementById("video-overlay"),
-      chatContainer: document.getElementById("chat-container"),
-    };
-
-    // Function to toggle code editor visibility
-    const toggleEditor = () => {
-      const isVisible = !els.codeEditorContainer.classList.contains('hidden');
-      
-      if (isVisible) {
-        // Hide the editor
-        els.codeEditorContainer.classList.add('hidden');
-        els.codePreview.classList.remove('hidden');
-        els.toggleEditorText.textContent = 'Show Editor';
-        
-        // Update the preview line count
-        updateCodePreview();
-      } else {
-        // Show the editor
-        els.codeEditorContainer.classList.remove('hidden');
-        els.codePreview.classList.add('hidden');
-        els.toggleEditorText.textContent = 'Hide Editor';
-        
-        // Refresh the editor to ensure proper rendering
-        els.codeEditor.refresh();
-      }
-    };
-    
-    // Update code preview info
-    const updateCodePreview = () => {
-      const code = els.codeEditor.getValue();
-      const lineCount = code.split('\n').filter(line => line.trim()).length;
-      els.codePreviewLines.textContent = lineCount;
-    };
-
-    const toggleLoading = (type, state) => {
-      els[`${type}Spinner`].classList.toggle("hidden", !state);
-      els[`${type}Button`].disabled = state;
-      if (type === "execute")
-        els.videoOverlay.classList.toggle("hidden", !state);
-    };
-
-    const showStatus = (type, message, timeout = 3000) => {
-      els.statusContainer.className = `px-4 py-3 rounded-md bg-${type}-900 bg-opacity-50`;
-      els.statusText.className = `text-${type}-300`;
-      els.statusText.textContent = message;
-      els.statusMessage.classList.remove("hidden");
-      if (timeout)
-        setTimeout(() => els.statusMessage.classList.add("hidden"), timeout);
-    };
-
-    // Add a message to the chat container
-    const addChatMessage = (message, role) => {
-      const messageDiv = document.createElement("div");
-      messageDiv.className =
-        role === "user"
-          ? "user-message p-3 text-white"
-          : "assistant-message p-3 text-gray-200";
-
-      if (role === "user") {
-        messageDiv.textContent = message;
-      } else {
-        // Count lines and show compact preview
-        const codeLines = message
-          .split("\n")
-          .filter((line) => line.trim() !== "");
-        const numLines = codeLines.length;
-
-        messageDiv.innerHTML = `<div class="code-preview">
-          <p class="text-xs font-mono flex items-center">
-            <span class="text-indigo-300 mr-2"><i>Code generated:</i></span>
-            <span class="bg-gray-700 px-2 py-1 rounded">${numLines} lines</span>
-          </p>
-        </div>`;
-      }
-
-      els.chatContainer.appendChild(messageDiv);
-      // Scroll to the bottom
-      els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
-    };
-
-    // Fetch chat history on page load
-    const fetchChatHistory = async () => {
-      try {
-        const response = await fetch("/get_chat_history");
-        if (response.ok) {
-          const data = await response.json();
-          if (data.chat_history && data.chat_history.length > 0) {
-            // Clear initial message
-            els.chatContainer.innerHTML = "";
-
-            // Add messages to chat
-            data.chat_history.forEach((message) => {
-              addChatMessage(message.content, message.role);
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch chat history:", error);
-      }
-    };
-
-    // Clear chat history
-    const clearChatHistory = async () => {
-      try {
-        const response = await fetch("/clear_chat_history", {
-          method: "POST",
-        });
-        if (response.ok) {
-          els.chatContainer.innerHTML = `
-            <div class="text-gray-500 text-center text-sm py-4">
-              Start a conversation with AutoManim
-            </div>
-          `;
-        }
-      } catch (error) {
-        console.error("Failed to clear chat history:", error);
-      }
-    };
-
-    async function executeManim() {
-      toggleLoading("execute", true);
-      showStatus("indigo", "Executing Manim code...", false);
-      try {
-        const res = await fetch("/execute_manim", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: els.codeEditor.getValue() }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          els.outputVideo.querySelector("source").src =
-            data.video_url + "?t=" + Date.now();
-          els.outputVideo.load();
-          els.outputVideo.play();
-          showStatus("green", "Animation generated successfully!");
-        } else throw new Error(data.error || "Failed to execute Manim code");
-      } catch (e) {
-        showStatus("red", e.message, false);
-      } finally {
-        toggleLoading("execute", false);
-      }
-    }
-
-    async function generateManim() {
-      if (!els.manimPrompt.value.trim())
-        return showStatus("red", "Please enter a prompt", false);
-      toggleLoading("generate", true);
-      showStatus("indigo", "Generating Manim code...", false);
-
-      // Add user message to chat interface immediately
-      addChatMessage(els.manimPrompt.value.trim(), "user");
-
-      try {
-        const res = await fetch("/generate_manim_code", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ manimPrompt: els.manimPrompt.value }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          els.codeEditor.setValue(data.code);
-          // Refresh the editor to update display
-          els.codeEditor.refresh();
-          
-          // Update code preview
-          updateCodePreview();
-
-          // Add assistant response to chat
-          addChatMessage(data.code, "assistant");
-
-          // Clear the input field
-          els.manimPrompt.value = "";
-        } else throw new Error(data.error || "Failed to generate Manim code");
-        showStatus("green", "Code generated successfully!");
-      } catch (e) {
-        showStatus("red", e.message, false);
-      } finally {
-        toggleLoading("generate", false);
-      }
-    }
-
-    // Event listeners
-    els.executeButton.addEventListener("click", executeManim);
-    els.generateButton.addEventListener("click", generateManim);
-    els.toggleEditorButton.addEventListener("click", toggleEditor);
-    els.previewShowEditor.addEventListener("click", () => {
-      if (els.codeEditorContainer.classList.contains('hidden')) {
-        toggleEditor();
-      }
-    });
-    els.manimPrompt.addEventListener("keypress", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        generateManim();
-      }
-    });
-    els.clearChatButton.addEventListener("click", clearChatHistory);
-
-    // Initialize the code preview on page load
-    updateCodePreview();
-
-    // Load chat history on page load
-    fetchChatHistory();
-  });
-</script>

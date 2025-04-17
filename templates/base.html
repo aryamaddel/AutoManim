@@ -4,40 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}AutoManim{% endblock %}</title>
+    
+    <!-- Core CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- CodeMirror Core CSS -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css"
-    />
-    <!-- CodeMirror Theme -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css"
-    />
-    <!-- Custom CSS -->
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/main.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/codemirror-custom.css') }}"
-    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+    
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/display/fullscreen.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/codemirror-custom.css') }}" />
 
-    <!-- CodeMirror Core JS -->
+    <!-- CodeMirror JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
-    <!-- Python Mode -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
-    <!-- CodeMirror Add-ons -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/matchbrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/comment/comment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/display/fullscreen.min.js"></script>
-    <link 
-      rel="stylesheet" 
-      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/display/fullscreen.min.css" 
-    />
 
     {% block head %}{% endblock %}
     
@@ -47,9 +31,7 @@
         theme: {
           extend: {
             colors: {
-              gray: {
-                850: '#1a202c',
-              }
+              gray: { 850: '#1a202c' }
             }
           }
         }
@@ -59,6 +41,8 @@
 
   <body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-gray-100 flex flex-col h-full">
     <div class="fixed inset-0 bg-[url('{{ url_for('static', filename='img/grid-pattern.svg') }}')] opacity-[0.02] pointer-events-none"></div>
+    
+    <!-- Header -->
     <header class="bg-slate-800/60 backdrop-blur-md py-3 px-4 shadow-lg border-b border-slate-700/30 relative z-10">
       <div class="container mx-auto flex justify-between items-center">
         <h1 class="text-xl font-bold text-white flex items-center">
@@ -68,6 +52,7 @@
       </div>
     </header>
 
+    <!-- Main Content -->
     <main class="flex-grow container mx-auto px-4 py-4 flex flex-col relative z-10">
       {% block content %}{% endblock %}
     </main>
