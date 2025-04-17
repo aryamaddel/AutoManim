@@ -31,6 +31,12 @@ document.addEventListener("DOMContentLoaded", () => {
     executeButton: document.getElementById("execute-button"),
     generateButton: document.getElementById("generate-button"),
     clearChatButton: document.getElementById("clear-chat-btn"),
+    toggleEditorButton: document.getElementById("toggle-editor-button"),
+    toggleEditorText: document.getElementById("toggle-editor-text"),
+    previewShowEditor: document.getElementById("preview-show-editor"),
+    codeEditorContainer: document.getElementById("code-editor-container"),
+    codePreview: document.getElementById("code-preview"),
+    codePreviewLines: document.getElementById("code-preview-lines"),
     codeEditor: codeEditor,
     outputVideo: document.getElementById("output-video"),
     statusMessage: document.getElementById("status-message"),
@@ -44,6 +50,33 @@ document.addEventListener("DOMContentLoaded", () => {
     chatContainer: document.getElementById("chat-container"),
     logDisplay: document.getElementById("log-display"),
     logLines: document.getElementById("log-lines"),
+  };
+
+  // Function to toggle code editor visibility
+  const toggleEditor = () => {
+    const isVisible = !els.codeEditorContainer.classList.contains('hidden');
+    
+    if (isVisible) {
+      // Hide the editor
+      els.codeEditorContainer.classList.add('hidden');
+      els.codePreview.classList.remove('hidden');
+      els.toggleEditorText.textContent = 'Show Editor';
+    } else {
+      // Show the editor
+      els.codeEditorContainer.classList.remove('hidden');
+      els.codePreview.classList.add('hidden');
+      els.toggleEditorText.textContent = 'Hide Editor';
+      
+      // Refresh the editor to ensure proper rendering
+      els.codeEditor.refresh();
+    }
+  };
+  
+  // Update code preview info
+  const updateCodePreview = () => {
+    const code = els.codeEditor.getValue();
+    const lineCount = code.split('\n').filter(line => line.trim()).length;
+    els.codePreviewLines.textContent = lineCount;
   };
 
   const toggleLoading = (type, state) => {
@@ -287,6 +320,9 @@ document.addEventListener("DOMContentLoaded", () => {
         els.codeEditor.setValue(data.code);
         // Refresh the editor to update display
         els.codeEditor.refresh();
+        
+        // Update code preview
+        updateCodePreview();
 
         // Add assistant response to chat
         addChatMessage(data.code, "assistant");
@@ -305,6 +341,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Event listeners
   els.executeButton.addEventListener("click", executeManim);
   els.generateButton.addEventListener("click", generateManim);
+  els.toggleEditorButton.addEventListener("click", toggleEditor);
+  els.previewShowEditor.addEventListener("click", () => {
+    if (els.codeEditorContainer.classList.contains('hidden')) {
+      toggleEditor();
+    }
+  });
   els.manimPrompt.addEventListener("keypress", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -312,6 +354,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   els.clearChatButton.addEventListener("click", clearChatHistory);
+
+  // Initialize the code preview on page load
+  updateCodePreview();
 
   // Load chat history on page load
   fetchChatHistory();
