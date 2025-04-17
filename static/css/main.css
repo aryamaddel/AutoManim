@@ -164,3 +164,45 @@ main, main > .container {
 .compact-p { padding: 1rem; }
 .compact-gap { gap: 0.75rem; }
 .compact-mb { margin-bottom: 0.75rem; }
+
+/* Simplified utility classes */
+.icon-md {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.5rem;
+}
+
+.spinner-sm {
+  width: 1rem;
+  height: 1rem;
+  animation: spin 1s linear infinite;
+}
+
+.absolute-center-right {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.glass-content {
+  background: linear-gradient(to bottom, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.7));
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(71, 85, 105, 0.3);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
