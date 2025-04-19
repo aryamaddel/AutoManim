@@ -289,54 +289,47 @@ def generate_manim_code():
         code = None
         error_messages = []
 
-        # Try Gemini first, then fall back to Groq
-        try:
-            client = GeminiClient()
-            code = client.generate_code(animation_description, session["chat_history"])
-        except Exception as gemini_error:
-            error_messages.append(f"Gemini API error: {str(gemini_error)}")
-            # Try Groq as fallback
+        # Try clients in sequence until one succeeds
+        clients = [GeminiClient, GroqClient]
+        code = None
+        error_messages = []
+
+        for ClientClass in clients:
             try:
-                client = GroqClient()
-                code = client.generate_code(
-                    animation_description, session["chat_history"]
-                )
-            except Exception as groq_error:
-                error_messages.append(f"Groq API error: {str(groq_error)}")
-                return (
-                    jsonify(
-                        {"error": f"Both APIs failed: {', '.join(error_messages)}"}
-                    ),
-                    500,
-                )
+                client = ClientClass()
+                code = client.generate_code(animation_description, session["chat_history"])
+                break  # Stop if successful
+            except Exception as e:
+                error_messages.append(f"{ClientClass.__name__} error: {str(e)}")
+                continue
+        
+        if not code:
+            return jsonify({"error": f"All APIs failed: {', '.join(error_messages)}"}), 500
 
-        if code:
-            code = re.sub(r"<think>.*?</think>", "", code, flags=re.DOTALL)
-            code = re.sub(r"^```python\s*", "", code)
-            code = re.sub(r"^```\s*", "", code)
-            code = re.sub(r"\s*```$", "", code)
-            code = code.strip()
+        # Clean up code
+        code = clean_generated_code(code)
 
-            if "class MainScene" not in code:
-                code = (
-                    "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
-                    + code
-                )
+        # Add assistant response to history
+        session["chat_history"].append({"role": "assistant", "content": code})
+        session.modified = True
 
-            # Add assistant response to history
-            session["chat_history"].append({"role": "assistant", "content": code})
-            # Save the session
-            session.modified = True
-
-            return jsonify(
-                {"success": True, "code": code, "chat_history": session["chat_history"]}
-            )
-        else:
-            return jsonify({"error": "Failed to generate valid code"}), 500
+        return jsonify({"success": True, "code": code, "chat_history": session["chat_history"]})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+def clean_generated_code(code):
+    """Clean generated code by removing markdown and ensuring MainScene class exists"""
+    code = re.sub(r"<think>.*?</think>", "", code, flags=re.DOTALL)
+    code = re.sub(r"^```python\s*", "", code)
+    code = re.sub(r"^```\s*", "", code)
+    code = re.sub(r"\s*```$", "", code)
+    code = code.strip()
+
+    if "class MainScene" not in code:
+        code = "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        " + code
+
+    return code
 
 @app.route("/get_chat_history", methods=["GET"])
 def get_chat_history():

@@ -1,32 +1,24 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialize CodeMirror
-  const codeEditor = CodeMirror.fromTextArea(
-    document.getElementById("manim-code"),
-    {
-      mode: "python",
-      theme: "dracula",
-      lineNumbers: true,
-      indentUnit: 4,
-      smartIndent: true,
-      indentWithTabs: false,
-      lineWrapping: true,
-      matchBrackets: true,
-      autoCloseBrackets: true,
-      tabSize: 4,
-      extraKeys: {
-        Tab: function (cm) {
-          if (cm.somethingSelected()) {
-            cm.indentSelection("add");
-          } else {
-            cm.replaceSelection("    ", "end", "+input");
-          }
-        },
-        "Ctrl-/": "toggleComment",
-        "Cmd-/": "toggleComment",
-      },
-    }
-  );
+  // Initialize CodeMirror with combined options
+  const codeEditor = CodeMirror.fromTextArea(document.getElementById("manim-code"), {
+    mode: "python",
+    theme: "dracula",
+    lineNumbers: true,
+    indentUnit: 4,
+    tabSize: 4,
+    smartIndent: true,
+    indentWithTabs: false,
+    lineWrapping: true,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    extraKeys: {
+      Tab: cm => cm.somethingSelected() ? cm.indentSelection("add") : cm.replaceSelection("    ", "end", "+input"),
+      "Ctrl-/": "toggleComment",
+      "Cmd-/": "toggleComment",
+    },
+  });
 
+  // Gather DOM elements
   const els = {
     executeButton: document.getElementById("execute-button"),
     generateButton: document.getElementById("generate-button"),
@@ -52,27 +44,17 @@ document.addEventListener("DOMContentLoaded", () => {
     logLines: document.getElementById("log-lines"),
   };
 
-  // Function to toggle code editor visibility
+  // UI utility functions
   const toggleEditor = () => {
     const isVisible = !els.codeEditorContainer.classList.contains('hidden');
     
-    if (isVisible) {
-      // Hide the editor
-      els.codeEditorContainer.classList.add('hidden');
-      els.codePreview.classList.remove('hidden');
-      els.toggleEditorText.textContent = 'Show Editor';
-    } else {
-      // Show the editor
-      els.codeEditorContainer.classList.remove('hidden');
-      els.codePreview.classList.add('hidden');
-      els.toggleEditorText.textContent = 'Hide Editor';
-      
-      // Refresh the editor to ensure proper rendering
-      els.codeEditor.refresh();
-    }
+    els.codeEditorContainer.classList.toggle('hidden', isVisible);
+    els.codePreview.classList.toggle('hidden', !isVisible);
+    els.toggleEditorText.textContent = isVisible ? 'Show Editor' : 'Hide Editor';
+    
+    if (!isVisible) els.codeEditor.refresh();
   };
   
-  // Update code preview info
   const updateCodePreview = () => {
     const code = els.codeEditor.getValue();
     const lineCount = code.split('\n').filter(line => line.trim()).length;
@@ -90,27 +72,18 @@ document.addEventListener("DOMContentLoaded", () => {
     els.statusText.className = `text-${type}-300 text-sm`;
     els.statusText.textContent = message;
     els.statusMessage.classList.remove("hidden");
-    if (timeout)
-      setTimeout(() => els.statusMessage.classList.add("hidden"), timeout);
+    if (timeout) setTimeout(() => els.statusMessage.classList.add("hidden"), timeout);
   };
 
-  // Add a message to the chat container
+  // Chat functions
   const addChatMessage = (message, role) => {
     const messageDiv = document.createElement("div");
-    messageDiv.className =
-      role === "user"
-        ? "user-message p-3 text-white"
-        : "assistant-message p-3 text-gray-200";
+    messageDiv.className = role === "user" ? "user-message p-3 text-white" : "assistant-message p-3 text-gray-200";
 
     if (role === "user") {
       messageDiv.textContent = message;
     } else {
-      // Count lines and show compact preview
-      const codeLines = message
-        .split("\n")
-        .filter((line) => line.trim() !== "");
-      const numLines = codeLines.length;
-
+      const numLines = message.split("\n").filter(line => line.trim() !== "").length;
       messageDiv.innerHTML = `<div class="code-preview">
         <p class="text-xs font-mono flex items-center">
           <span class="text-indigo-300 mr-2"><i>Code generated:</i></span>
@@ -120,21 +93,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     els.chatContainer.appendChild(messageDiv);
-    // Scroll to the bottom
     els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
   };
 
-  // Fetch chat history on page load
+  // API interactions
   const fetchChatHistory = async () => {
     try {
       const response = await fetch("/get_chat_history");
       if (response.ok) {
         const data = await response.json();
         if (data.chat_history && data.chat_history.length > 0) {
-          // Clear initial message
           els.chatContainer.innerHTML = "";
-
-          // Add messages to chat
           data.chat_history.forEach((message) => {
             addChatMessage(message.content, message.role);
           });
@@ -145,7 +114,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Clear chat history
   const clearChatHistory = async () => {
     try {
       const response = await fetch("/clear_chat_history", {
@@ -163,55 +131,41 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Log display management
+  // Log handling
   let logEventSource = null;
   const maxLogLines = 4;
 
   const addLogLine = (text, type = "info") => {
-    // Create a new log line element
     const logLine = document.createElement("div");
     logLine.className = `log-line ${type}`;
     logLine.textContent = text;
-
-    // Add the new line
     els.logLines.appendChild(logLine);
 
-    // Check if we need to remove old lines
     const lines = els.logLines.querySelectorAll(".log-line");
     if (lines.length > maxLogLines) {
-      // Add fade-out class to the oldest line
       lines[0].classList.add("fade-out");
-
-      // Remove after animation completes
       setTimeout(() => {
         if (lines[0].parentNode === els.logLines) {
           els.logLines.removeChild(lines[0]);
         }
-      }, 500); // Match the CSS transition duration
+      }, 500);
     }
   };
 
   const startLogStream = () => {
-    // Close any existing stream
     if (logEventSource) {
       logEventSource.close();
     }
 
-    // Clear existing log lines
     els.logLines.innerHTML = "";
-
-    // Show the log display
     els.logDisplay.classList.add("active");
-
-    // Add an initial line
     addLogLine("Starting Manim execution...");
 
-    // Connect to SSE endpoint
     logEventSource = new EventSource("/stream_logs");
 
     logEventSource.onmessage = (event) => {
       if (event.data === "HEARTBEAT") {
-        return; // Ignore heartbeats
+        return;
       }
 
       if (event.data === "STREAM_END") {
@@ -221,25 +175,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (event.data.startsWith("VIDEO_READY:")) {
         const videoUrl = event.data.substring("VIDEO_READY:".length);
-        // Update video source and play
-        els.outputVideo.querySelector("source").src =
-          videoUrl + "?t=" + Date.now();
+        els.outputVideo.querySelector("source").src = videoUrl + "?t=" + Date.now();
         els.outputVideo.load();
         els.outputVideo.play();
-
-        // Add success message
         addLogLine("Animation rendered successfully!", "success");
-
-        // Turn off loading state in UI
         toggleLoading("execute", false);
         showStatus("green", "Animation generated successfully!");
-
-        // Keep log display visible
         return;
       }
 
       if (event.data.startsWith("ERROR:")) {
-        // Handle errors
         const errorMessage = event.data.substring("ERROR:".length);
         addLogLine(errorMessage.trim(), "error");
         showStatus("red", errorMessage.trim(), false);
@@ -247,7 +192,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Regular log line
       addLogLine(event.data);
     };
 
@@ -265,7 +209,6 @@ document.addEventListener("DOMContentLoaded", () => {
       logEventSource = null;
     }
 
-    // Add a final line after a brief delay
     setTimeout(() => {
       addLogLine("Execution complete", "success");
     }, 500);
@@ -274,8 +217,6 @@ document.addEventListener("DOMContentLoaded", () => {
   async function executeManim() {
     toggleLoading("execute", true);
     showStatus("indigo", "Executing Manim code...", false);
-
-    // Start the log stream
     startLogStream();
 
     try {
@@ -286,11 +227,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to execute Manim code");
-      }
-
-      // Note: We don't end loading here as it happens via the log stream
+      if (!res.ok) throw new Error(data.error || "Failed to execute Manim code");
     } catch (e) {
       addLogLine(e.message, "error");
       showStatus("red", e.message, false);
@@ -303,10 +240,9 @@ document.addEventListener("DOMContentLoaded", () => {
   async function generateManim() {
     if (!els.manimPrompt.value.trim())
       return showStatus("red", "Please enter a prompt", false);
+      
     toggleLoading("generate", true);
     showStatus("indigo", "Generating Manim code...", false);
-
-    // Add user message to chat interface immediately
     addChatMessage(els.manimPrompt.value.trim(), "user");
 
     try {
@@ -315,22 +251,16 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ manimPrompt: els.manimPrompt.value }),
       });
+      
       const data = await res.json();
       if (res.ok) {
         els.codeEditor.setValue(data.code);
-        // Refresh the editor to update display
         els.codeEditor.refresh();
-        
-        // Update code preview
         updateCodePreview();
-
-        // Add assistant response to chat
         addChatMessage(data.code, "assistant");
-
-        // Clear the input field
         els.manimPrompt.value = "";
+        showStatus("green", "Code generated successfully!");
       } else throw new Error(data.error || "Failed to generate Manim code");
-      showStatus("green", "Code generated successfully!");
     } catch (e) {
       showStatus("red", e.message, false);
     } finally {
@@ -338,26 +268,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Event listeners
-  els.executeButton.addEventListener("click", executeManim);
-  els.generateButton.addEventListener("click", generateManim);
-  els.toggleEditorButton.addEventListener("click", toggleEditor);
-  els.previewShowEditor.addEventListener("click", () => {
-    if (els.codeEditorContainer.classList.contains('hidden')) {
-      toggleEditor();
-    }
-  });
-  els.manimPrompt.addEventListener("keypress", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      generateManim();
-    }
-  });
-  els.clearChatButton.addEventListener("click", clearChatHistory);
+  // Event listeners - using a common handler pattern
+  const setupListeners = () => {
+    els.executeButton.addEventListener("click", executeManim);
+    els.generateButton.addEventListener("click", generateManim);
+    els.toggleEditorButton.addEventListener("click", toggleEditor);
+    els.previewShowEditor.addEventListener("click", () => {
+      if (els.codeEditorContainer.classList.contains('hidden')) toggleEditor();
+    });
+    els.manimPrompt.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        generateManim();
+      }
+    });
+    els.clearChatButton.addEventListener("click", clearChatHistory);
+  };
 
-  // Initialize the code preview on page load
-  updateCodePreview();
+  // Initialization
+  const init = () => {
+    updateCodePreview();
+    fetchChatHistory();
+    setupListeners();
+  };
 
-  // Load chat history on page load
-  fetchChatHistory();
+  init();
 });
