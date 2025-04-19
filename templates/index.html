@@ -1,13 +1,14 @@
-{% extends "base.html" %} {% block header_actions %}
-<button
-  id="clear-chat-btn"
-  class="text-xs bg-opacity-50 bg-gray-700 hover:bg-gray-600 text-gray-300 py-1 px-3 rounded-md transition duration-200"
->
+{% extends "base.html" %}
+
+{% block header_actions %}
+<button id="clear-chat-btn" class="text-xs bg-opacity-50 bg-gray-700 hover:bg-gray-600 text-gray-300 py-1 px-3 rounded-md transition duration-200">
   Clear Chat
 </button>
-{% endblock %} {% block content %}
+{% endblock %}
+
+{% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 h-full">
-  <!-- Code Editor - Left column -->
+  <!-- Code Editor -->
   <div class="glass-panel border border-slate-700/30 rounded-xl shadow-xl compact-p flex flex-col lg:col-span-3">
     <div class="flex justify-between items-center compact-mb">
       <h2 class="text-lg font-bold text-indigo-300 flex items-center">
@@ -17,24 +18,12 @@
         MANIM Code
       </h2>
       <div class="flex items-center gap-2">
-        <button
-          id="toggle-editor-button"
-          class="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white py-1 px-3 rounded-md transition duration-200 border border-slate-700/50"
-        >
+        <button id="toggle-editor-button" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white py-1 px-3 rounded-md transition duration-200 border border-slate-700/50">
           <span id="toggle-editor-text">Show Editor</span>
         </button>
-        <button
-          id="execute-button"
-          class="glass-button text-white py-1 px-4 rounded-md transition duration-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 flex items-center gap-1 text-sm"
-        >
+        <button id="execute-button" class="glass-button text-white py-1 px-4 rounded-md flex items-center gap-1 text-sm">
           <span>Execute</span>
-          <svg
-            id="execute-spinner"
-            class="animate-spin h-4 w-4 text-white hidden"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
+          <svg id="execute-spinner" class="animate-spin h-4 w-4 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -42,7 +31,6 @@
       </div>
     </div>
 
-    <!-- Status message -->
     <div id="status-message" class="compact-mb hidden">
       <div class="px-3 py-1 rounded-md" id="status-container">
         <p id="status-text" class="text-xs">Processing...</p>
@@ -50,7 +38,7 @@
     </div>
 
     <!-- Code Preview -->
-    <div id="code-preview" class="bg-gradient-to-b from-slate-800/60 to-slate-900/70 rounded-lg flex-grow flex flex-col items-center justify-center p-6 border border-slate-700/30">
+    <div id="code-preview" class="bg-slate-800/60 rounded-lg flex-grow flex flex-col items-center justify-center p-6 border border-slate-700/30">
       <div class="text-center max-w-md">
         <svg class="w-10 h-10 text-indigo-400 mx-auto mb-3 opacity-80" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
           <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
@@ -94,7 +82,7 @@ class CreateCircle(Scene):
       </h2>
       
       <!-- Video container with overlay -->
-      <div class="relative w-full aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-md overflow-hidden flex items-center justify-center mb-2 border border-slate-700/30">
+      <div class="relative w-full aspect-video bg-slate-800 rounded-md overflow-hidden flex items-center justify-center mb-2 border border-slate-700/30">
         <div id="video-overlay" class="absolute inset-0 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden z-10">
           <div class="text-center">
             <svg class="animate-spin h-10 w-10 text-indigo-400 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -111,17 +99,17 @@ class CreateCircle(Scene):
       </div>
 
       <!-- Terminal console -->
-      <div class="bg-slate-900/70 backdrop-blur-sm rounded-md border border-slate-800 overflow-hidden">
+      <div class="bg-slate-900/70 rounded-md border border-slate-800 overflow-hidden">
         <div class="flex justify-between items-center px-3 py-1.5 bg-slate-800/80 border-b border-slate-700">
           <div class="flex items-center gap-1.5">
             <div class="w-2 h-2 rounded-full bg-red-500 opacity-80"></div>
             <div class="w-2 h-2 rounded-full bg-yellow-500 opacity-80"></div>
             <div class="w-2 h-2 rounded-full bg-green-500 opacity-80"></div>
           </div>
-          <span class="text-xs text-slate-400 font-mono">Console</span>
+          <span class="text-xs text-slate-400 font-mono">Manim Progress</span>
           <div class="w-8"></div>
         </div>
-        <div id="log-display" class="transition-opacity duration-300 opacity-0 max-h-0 overflow-hidden">
+        <div id="log-display">
           <div id="log-lines" class="p-2 font-mono text-xs text-emerald-300 space-y-1"></div>
         </div>
       </div>
@@ -149,13 +137,7 @@ class CreateCircle(Scene):
       <!-- Chat input -->
       <div class="flex gap-2 mt-auto">
         <div class="flex-grow relative">
-          <input 
-            type="text" 
-            id="manim-prompt" 
-            placeholder="Enter your prompt..." 
-            class="w-full py-2 px-4 glass-input rounded-md text-sm focus:ring-indigo-500" 
-          />
-          <!-- Spinner -->
+          <input type="text" id="manim-prompt" placeholder="Enter your prompt..." class="w-full py-2 px-4 glass-input rounded-md text-sm" />
           <div id="generate-prompt-spinner" class="absolute-center-right hidden">
             <svg class="spinner-sm text-indigo-400" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />

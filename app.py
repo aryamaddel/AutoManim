@@ -18,10 +18,10 @@ log_queue = queue.Queue()
 # Flag to indicate if the Manim process is running
 manim_running = False
 
-# Patterns to include in general logs
+# Patterns to include in general logs - update with more focused patterns
 LOG_PATTERNS = [
-    "Latex", "Played", "Scene", 
-    "Writing", "Written", "Rendered", "Animation"
+    "Animation ", "Playing ", "Creating ", "Rendering ",
+    "File ready at", "Rendered", "Played ", "Combining", "movie file"
 ]
 
 # Collect traceback for proper error display
@@ -108,12 +108,25 @@ def process_log_line(line, error_tracker):
     if "warning" in line.lower():
         return f"WARNING: {line}"
         
-    # Check for other important logs
+    # Only show important log lines - be more selective
     if any(pattern.lower() in line.lower() for pattern in LOG_PATTERNS):
-        return line
+        # Clean up the log line for better readability
+        # Remove file paths and just keep the essential message
+        if "Partial movie file written in" in line:
+            return "Animation frame rendered"
         
-    # By default, include the line as is for better visibility into the process
-    return line
+        # Clean up animation percentage display
+        if "Animation" in line and ": 0%|" in line:
+            return line.split("|")[0].strip()
+            
+        # Simplify rendered message
+        if "File ready at" in line:
+            return "Video compilation complete"
+        
+        return line.strip()
+    
+    # Skip most other lines
+    return None
 
 def find_video_file(static_folder, scene_name):
     """Find the generated video file"""

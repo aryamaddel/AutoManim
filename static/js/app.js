@@ -131,41 +131,75 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Log handling
+  // Log display management
   let logEventSource = null;
-  const maxLogLines = 4;
+  const maxLogLines = 8;  // Increased to show more important logs
 
   const addLogLine = (text, type = "info") => {
+    // Skip unimportant logs
+    if (text === "Animation frame rendered" && 
+        document.querySelectorAll('.log-line:contains("Animation frame rendered")').length > 0) {
+      // Just update the last "Animation frame rendered" line instead of adding a new one
+      const renderingLines = document.querySelectorAll('.log-line.rendering-progress');
+      if (renderingLines.length > 0) {
+        renderingLines[renderingLines.length - 1].textContent += ".";
+        return;
+      }
+    }
+
+    // Create a new log line element
     const logLine = document.createElement("div");
     logLine.className = `log-line ${type}`;
+    
+    // Add special class for rendering progress
+    if (text === "Animation frame rendered") {
+      logLine.classList.add("rendering-progress");
+    }
+    
     logLine.textContent = text;
+
+    // Add the new line
     els.logLines.appendChild(logLine);
 
+    // Scroll to bottom
+    els.logLines.scrollTop = els.logLines.scrollHeight;
+
+    // Check if we need to remove old lines
     const lines = els.logLines.querySelectorAll(".log-line");
     if (lines.length > maxLogLines) {
+      // Add fade-out class to the oldest line
       lines[0].classList.add("fade-out");
+
+      // Remove after animation completes
       setTimeout(() => {
         if (lines[0].parentNode === els.logLines) {
           els.logLines.removeChild(lines[0]);
         }
-      }, 500);
+      }, 500); // Match the CSS transition duration
     }
   };
 
   const startLogStream = () => {
+    // Close any existing stream
     if (logEventSource) {
       logEventSource.close();
     }
 
+    // Clear existing log lines
     els.logLines.innerHTML = "";
-    els.logDisplay.classList.add("active");
-    addLogLine("Starting Manim execution...");
 
+    // Show the log display
+    els.logDisplay.classList.add("active");
+
+    // Add an initial line
+    addLogLine("Starting Manim animation...", "info");
+
+    // Connect to SSE endpoint
     logEventSource = new EventSource("/stream_logs");
 
     logEventSource.onmessage = (event) => {
       if (event.data === "HEARTBEAT") {
-        return;
+        return; // Ignore heartbeats
       }
 
       if (event.data === "STREAM_END") {
@@ -175,16 +209,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (event.data.startsWith("VIDEO_READY:")) {
         const videoUrl = event.data.substring("VIDEO_READY:".length);
-        els.outputVideo.querySelector("source").src = videoUrl + "?t=" + Date.now();
+        // Update video source and play
+        els.outputVideo.querySelector("source").src =
+          videoUrl + "?t=" + Date.now();
         els.outputVideo.load();
         els.outputVideo.play();
+
+        // Add success message
         addLogLine("Animation rendered successfully!", "success");
+
+        // Turn off loading state in UI
         toggleLoading("execute", false);
         showStatus("green", "Animation generated successfully!");
+
+        // Keep log display visible
         return;
       }
 
       if (event.data.startsWith("ERROR:")) {
+        // Handle errors
         const errorMessage = event.data.substring("ERROR:".length);
         addLogLine(errorMessage.trim(), "error");
         showStatus("red", errorMessage.trim(), false);
@@ -192,6 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      // Regular log line
       addLogLine(event.data);
     };
 

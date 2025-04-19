@@ -1,55 +1,33 @@
-/* CodeMirror theme variables */
+/* Essential vars */
 :root {
-  --cm-bg: rgba(15, 23, 42, 0.7);
-  --cm-gutter: rgba(30, 41, 59, 0.5);
-  --cm-border: rgba(71, 85, 105, 0.3);
+  --cm-bg: rgba(15,23,42,.7);
+  --cm-border: rgba(71,85,105,.3);
   --cm-text: #f8f8f2;
-  --cm-cursor: #f8f8f2;
-  --cm-selected: rgba(255, 255, 255, 0.1);
   --cm-comment: #6c7086;
   --cm-keyword: #bd93f9;
   --cm-string: #f1fa8c;
   --cm-def: #50fa7b;
-  --cm-operator: #ff79c6;
+  --cm-op: #ff79c6;
 }
 
-/* Core CodeMirror styling */
 .CodeMirror {
-  height: 100%;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  border-radius: 0.5rem;
-  background-color: var(--cm-bg);
+  height: 100%; 
+  font: 14px/1.5 monospace;
+  background: var(--cm-bg);
   border: 1px solid var(--cm-border);
 }
 
-.CodeMirror-gutters {
-  background-color: var(--cm-gutter);
-  border-right: 1px solid var(--cm-border);
-}
-
-.CodeMirror-linenumber {
-  color: rgba(148, 163, 184, 0.7);
-  font-size: 12px;
-  padding: 0 10px;
-}
-
+.CodeMirror-gutters { background: rgba(30,41,59,.5); border-right: 1px solid var(--cm-border); }
+.CodeMirror-linenumber { color: rgba(148,163,184,.7); }
 .code-editor-container { display: flex; flex-direction: column; }
 
-/* Dracula theme customizations */
-.cm-s-dracula {
-  .CodeMirror-cursor { border-left: 2px solid var(--cm-cursor); }
-  .CodeMirror-activeline-background { background: rgba(68, 71, 90, 0.3); }
-  .CodeMirror-selected { background: var(--cm-selected); }
-  .cm-comment { color: var(--cm-comment); font-style: italic; }
-  .cm-keyword, .cm-number { color: var(--cm-keyword); }
-  .cm-keyword { font-weight: 500; }
-  .cm-string { color: var(--cm-string); }
-  .cm-variable { color: var(--cm-text); }
-  .cm-operator { color: var(--cm-operator); }
-  .cm-def { color: var(--cm-def); font-weight: 500; }
-}
+/* Dracula theme */
+.cm-s-dracula .CodeMirror-cursor { border-left: 2px solid var(--cm-text); }
+.cm-s-dracula .cm-comment { color: var(--cm-comment); font-style: italic; }
+.cm-s-dracula .cm-keyword, .cm-s-dracula .cm-number { color: var(--cm-keyword); }
+.cm-s-dracula .cm-string { color: var(--cm-string); }
+.cm-s-dracula .cm-def { color: var(--cm-def); font-weight: 500; }
+.cm-s-dracula .cm-operator { color: var(--cm-op); }
+.cm-s-dracula .cm-variable { color: var(--cm-text); }
 
-/* Clean background elements */
-.CodeMirror-scrollbar-filler, .CodeMirror-gutter-filler { background-color: transparent; }
+.CodeMirror-scrollbar-filler, .CodeMirror-gutter-filler { background: transparent; }
