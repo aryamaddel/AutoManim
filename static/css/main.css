@@ -1,21 +1,29 @@
-/* Minimal core layout */
+/* Base variables */
+:root {
+  --primary-color: rgba(99, 102, 241, 1);
+  --primary-light: rgba(79, 70, 229, 0.3);
+  --dark-bg: rgba(15, 23, 42, 0.7);
+  --border-color: rgba(71, 85, 105, 0.3);
+  --scrollbar-thumb: rgba(74, 85, 104, 0.6);
+  --scrollbar-track: rgba(30, 41, 59, 0.5);
+}
+
+/* Core layout */
 html, body, main, main > .container {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-main, main > .container {
-  flex-grow: 1;
-}
+main, main > .container { flex-grow: 1; }
 
-/* Universal thin scrollbars */
+/* Scrollbars */
 .chat-container, #log-display.active, .CodeMirror-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #4a5568 #2d3748;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
-/* Webkit scrollbar - single definition */
+/* Webkit scrollbar styles - consolidated */
 .chat-container::-webkit-scrollbar,
 #log-display.active::-webkit-scrollbar,
 .CodeMirror-vscrollbar::-webkit-scrollbar {
@@ -25,17 +33,17 @@ main, main > .container {
 .chat-container::-webkit-scrollbar-track,
 #log-display.active::-webkit-scrollbar-track,
 .CodeMirror-vscrollbar::-webkit-scrollbar-track {
-  background: rgba(30, 41, 59, 0.5);
+  background: var(--scrollbar-track);
 }
 
 .chat-container::-webkit-scrollbar-thumb,
 #log-display.active::-webkit-scrollbar-thumb,
 .CodeMirror-vscrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(74, 85, 104, 0.6);
+  background-color: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
-/* Enhanced message bubbles */
+/* Chat messages - shared properties */
 .user-message, .assistant-message {
   width: fit-content;
   max-width: 90%;
@@ -46,8 +54,8 @@ main, main > .container {
 }
 
 .user-message {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.3) 0%, rgba(67, 56, 202, 0.3) 100%);
-  border: 1px solid rgba(79, 70, 229, 0.3);
+  background: linear-gradient(135deg, var(--primary-light) 0%, rgba(67, 56, 202, 0.3) 100%);
+  border: 1px solid var(--primary-light);
   margin-left: auto;
 }
 
@@ -57,31 +65,27 @@ main, main > .container {
   margin-right: auto;
 }
 
-/* Improved status container */
-#status-message {
-  transition: all 0.3s ease;
-}
+/* Status container */
+#status-message { transition: all 0.3s ease; }
+#status-container { border-left: 2px solid; }
 
-#status-container {
-  border-left: 2px solid;
-}
-
-#status-container.bg-green-900 {
+/* Status types */
+.bg-green-900 {
   background: linear-gradient(90deg, rgba(6, 78, 59, 0.3), rgba(6, 78, 59, 0.1)); 
   border-color: #10b981;
 }
 
-#status-container.bg-red-900 {
+.bg-red-900 {
   background: linear-gradient(90deg, rgba(127, 29, 29, 0.3), rgba(127, 29, 29, 0.1));
   border-color: #ef4444;
 }
 
-#status-container.bg-indigo-900 {
+.bg-indigo-900 {
   background: linear-gradient(90deg, rgba(49, 46, 129, 0.3), rgba(49, 46, 129, 0.1));
   border-color: #6366f1;
 }
 
-/* Enhanced log display */
+/* Log display */
 #log-display {
   transition: all 0.3s ease;
 }
@@ -110,19 +114,21 @@ main, main > .container {
   color: #818cf8;
 }
 
+/* Log line types */
 .log-line.error { color: #f87171; }
 .log-line.success { color: #6ee7b7; }
 .log-line.fade-out { opacity: 0; }
 
-/* Modern UI elements */
+/* UI components */
 .glass-panel {
   background: rgba(17, 24, 39, 0.5);
   backdrop-filter: blur(5px);
 }
 
+/* Input styles */
 .glass-input {
   background: linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.5) 100%);
-  border: 1px solid rgba(71, 85, 105, 0.3);
+  border: 1px solid var(--border-color);
 }
 
 .glass-input:focus {
@@ -130,6 +136,7 @@ main, main > .container {
   border-color: rgba(99, 102, 241, 0.5);
 }
 
+/* Button styles */
 .glass-button {
   background: linear-gradient(180deg, rgba(99, 102, 241, 0.8) 0%, rgba(79, 70, 229, 0.9) 100%);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 1px 0 rgba(255, 255, 255, 0.1) inset;
@@ -141,11 +148,9 @@ main, main > .container {
   transform: translateY(-1px);
 }
 
-.glass-button:active {
-  transform: translateY(0px);
-}
+.glass-button:active { transform: translateY(0); }
 
-/* Enhanced code preview */
+/* Code preview */
 #code-preview {
   transition: all 0.3s ease;
   min-height: 200px;
@@ -156,16 +161,14 @@ main, main > .container {
   transition: all 0.2s;
 }
 
-#preview-show-editor:hover {
-  transform: translateY(-1px);
-}
+#preview-show-editor:hover { transform: translateY(-1px); }
 
 /* Layout helpers */
 .compact-p { padding: 1rem; }
 .compact-gap { gap: 0.75rem; }
 .compact-mb { margin-bottom: 0.75rem; }
 
-/* Simplified utility classes */
+/* Utility classes */
 .icon-md {
   width: 1.25rem;
   height: 1.25rem;
@@ -188,7 +191,7 @@ main, main > .container {
 .glass-content {
   background: linear-gradient(to bottom, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.7));
   backdrop-filter: blur(5px);
-  border: 1px solid rgba(71, 85, 105, 0.3);
+  border: 1px solid var(--border-color);
 }
 
 .empty-state {
@@ -199,10 +202,6 @@ main, main > .container {
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

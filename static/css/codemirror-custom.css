@@ -1,18 +1,33 @@
-/* Enhanced CodeMirror styling */
+/* CodeMirror theme variables */
+:root {
+  --cm-bg: rgba(15, 23, 42, 0.7);
+  --cm-gutter: rgba(30, 41, 59, 0.5);
+  --cm-border: rgba(71, 85, 105, 0.3);
+  --cm-text: #f8f8f2;
+  --cm-cursor: #f8f8f2;
+  --cm-selected: rgba(255, 255, 255, 0.1);
+  --cm-comment: #6c7086;
+  --cm-keyword: #bd93f9;
+  --cm-string: #f1fa8c;
+  --cm-def: #50fa7b;
+  --cm-operator: #ff79c6;
+}
+
+/* Core CodeMirror styling */
 .CodeMirror {
   height: 100%;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 14px;
   line-height: 1.5;
   border-radius: 0.5rem;
-  background-color: rgba(15, 23, 42, 0.7);
+  background-color: var(--cm-bg);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(71, 85, 105, 0.3);
+  border: 1px solid var(--cm-border);
 }
 
 .CodeMirror-gutters {
-  background-color: rgba(30, 41, 59, 0.5);
-  border-right: 1px solid rgba(71, 85, 105, 0.3);
+  background-color: var(--cm-gutter);
+  border-right: 1px solid var(--cm-border);
 }
 
 .CodeMirror-linenumber {
@@ -21,68 +36,33 @@
   padding: 0 10px;
 }
 
-/* Container for CodeMirror */
+/* Container */
 .code-editor-container {
   display: flex;
   flex-direction: column;
 }
 
-/* Essential functionality */
+/* Fullscreen mode */
 .CodeMirror-fullscreen {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   height: auto;
   z-index: 9999;
 }
 
-/* Enhanced syntax highlighting */
-.cm-s-dracula .CodeMirror-cursor {
-  border-left: 2px solid #f8f8f2;
-}
+/* Dracula theme customizations */
+.cm-s-dracula .CodeMirror-cursor { border-left: 2px solid var(--cm-cursor); }
+.cm-s-dracula .CodeMirror-activeline-background { background: rgba(68, 71, 90, 0.3); }
+.cm-s-dracula .CodeMirror-selected { background: var(--cm-selected); }
+.cm-s-dracula .cm-comment { color: var(--cm-comment); font-style: italic; }
+.cm-s-dracula .cm-keyword { color: var(--cm-keyword); font-weight: 500; }
+.cm-s-dracula .cm-string { color: var(--cm-string); }
+.cm-s-dracula .cm-number { color: var(--cm-keyword); }
+.cm-s-dracula .cm-variable { color: var(--cm-text); }
+.cm-s-dracula .cm-operator { color: var(--cm-operator); }
+.cm-s-dracula .cm-def { color: var(--cm-def); font-weight: 500; }
 
-.cm-s-dracula .CodeMirror-activeline-background {
-  background: rgba(68, 71, 90, 0.3);
-}
-
-.cm-s-dracula .CodeMirror-selected {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.cm-s-dracula .cm-comment {
-  color: #6c7086;
-  font-style: italic;
-}
-
-.cm-s-dracula .cm-keyword {
-  color: #bd93f9;
-  font-weight: 500;
-}
-
-.cm-s-dracula .cm-string {
-  color: #f1fa8c;
-}
-
-.cm-s-dracula .cm-number {
-  color: #bd93f9;
-}
-
-.cm-s-dracula .cm-variable {
-  color: #f8f8f2;
-}
-
-.cm-s-dracula .cm-operator {
-  color: #ff79c6;
-}
-
-.cm-s-dracula .cm-def {
-  color: #50fa7b;
-  font-weight: 500;
-}
-
-/* Clean background */
+/* Clean background elements */
 .CodeMirror-scrollbar-filler, 
 .CodeMirror-gutter-filler {
   background-color: transparent;
