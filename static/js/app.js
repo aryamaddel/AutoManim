@@ -46,10 +46,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // UI utility functions
   const toggleEditor = () => {
-    const isVisible = !els.codeEditorContainer.classList.contains('hidden');
+    const isVisible = !els.codeEditorContainer.classList.contains('d-none');
     
-    els.codeEditorContainer.classList.toggle('hidden', isVisible);
-    els.codePreview.classList.toggle('hidden', !isVisible);
+    els.codeEditorContainer.classList.toggle('d-none', isVisible);
+    els.codePreview.classList.toggle('d-none', !isVisible);
     els.toggleEditorText.textContent = isVisible ? 'Show Editor' : 'Hide Editor';
     
     if (!isVisible) els.codeEditor.refresh();
@@ -62,34 +62,52 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const toggleLoading = (type, state) => {
-    els[`${type}Spinner`].classList.toggle("hidden", !state);
+    if (state) {
+      els[`${type}Spinner`].classList.remove("d-none");
+    } else {
+      els[`${type}Spinner`].classList.add("d-none");
+    }
     els[`${type}Button`].disabled = state;
-    if (type === "execute") els.videoOverlay.classList.toggle("hidden", !state);
+    if (type === "execute") {
+      if (state) {
+        els.videoOverlay.classList.remove("d-none");
+        els.videoOverlay.classList.add("d-flex");
+      } else {
+        els.videoOverlay.classList.add("d-none");
+        els.videoOverlay.classList.remove("d-flex");
+      }
+    }
   };
 
   const showStatus = (type, message, timeout = 3000) => {
-    els.statusContainer.className = `px-4 py-2 rounded-md bg-${type}-900`;
-    els.statusText.className = `text-${type}-300 text-sm`;
+    els.statusContainer.className = `px-3 py-2 rounded bg-${type}-custom`;
+    els.statusText.className = `small mb-0`;
     els.statusText.textContent = message;
-    els.statusMessage.classList.remove("hidden");
-    if (timeout) setTimeout(() => els.statusMessage.classList.add("hidden"), timeout);
+    els.statusMessage.classList.remove("d-none");
+    if (timeout) setTimeout(() => els.statusMessage.classList.add("d-none"), timeout);
   };
 
   // Chat functions
   const addChatMessage = (message, role) => {
     const messageDiv = document.createElement("div");
-    messageDiv.className = role === "user" ? "user-message p-3 text-white" : "assistant-message p-3 text-gray-200";
+    messageDiv.className = role === "user" ? "user-message p-3" : "assistant-message p-3";
 
     if (role === "user") {
       messageDiv.textContent = message;
     } else {
       const numLines = message.split("\n").filter(line => line.trim() !== "").length;
       messageDiv.innerHTML = `<div class="code-preview">
-        <p class="text-xs font-mono flex items-center">
-          <span class="text-indigo-300 mr-2"><i>Code generated:</i></span>
-          <span class="bg-gray-700 px-2 py-1 rounded">${numLines} lines</span>
+        <p class="small font-monospace d-flex align-items-center">
+          <span class="me-2" style="color: #a5b4fc"><i>Code generated:</i></span>
+          <span class="bg-dark bg-opacity-50 px-2 py-1 rounded">${numLines} lines</span>
         </p>
       </div>`;
+    }
+
+    // Remove the empty state if it exists
+    const emptyState = els.chatContainer.querySelector(".text-center.py-4");
+    if (emptyState) {
+      els.chatContainer.removeChild(emptyState);
     }
 
     els.chatContainer.appendChild(messageDiv);
@@ -121,8 +139,11 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       if (response.ok) {
         els.chatContainer.innerHTML = `
-          <div class="text-gray-500 text-center text-sm py-4">
-            Start a conversation with AutoManim
+          <div class="text-center py-4 opacity-50">
+            <svg class="mb-2" width="32" height="32" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd" />
+            </svg>
+            <span class="text-secondary small">Start a conversation with AutoManim</span>
           </div>
         `;
       }
@@ -220,7 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Turn off loading state in UI
         toggleLoading("execute", false);
-        showStatus("green", "Animation generated successfully!");
+        showStatus("success", "Animation generated successfully!");
 
         // Keep log display visible
         return;
@@ -230,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Handle errors
         const errorMessage = event.data.substring("ERROR:".length);
         addLogLine(errorMessage.trim(), "error");
-        showStatus("red", errorMessage.trim(), false);
+        showStatus("danger", errorMessage.trim(), false);
         toggleLoading("execute", false);
         return;
       }
@@ -260,7 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function executeManim() {
     toggleLoading("execute", true);
-    showStatus("indigo", "Executing Manim code...", false);
+    showStatus("primary", "Executing Manim code...", false);
     startLogStream();
 
     try {
@@ -274,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) throw new Error(data.error || "Failed to execute Manim code");
     } catch (e) {
       addLogLine(e.message, "error");
-      showStatus("red", e.message, false);
+      showStatus("danger", e.message, false);
       toggleLoading("execute", false);
       els.logDisplay.classList.remove("active");
       endLogStream();
@@ -283,10 +304,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function generateManim() {
     if (!els.manimPrompt.value.trim())
-      return showStatus("red", "Please enter a prompt", false);
+      return showStatus("danger", "Please enter a prompt", false);
       
     toggleLoading("generate", true);
-    showStatus("indigo", "Generating Manim code...", false);
+    showStatus("primary", "Generating Manim code...", false);
     addChatMessage(els.manimPrompt.value.trim(), "user");
 
     try {
@@ -303,10 +324,10 @@ document.addEventListener("DOMContentLoaded", () => {
         updateCodePreview();
         addChatMessage(data.code, "assistant");
         els.manimPrompt.value = "";
-        showStatus("green", "Code generated successfully!");
+        showStatus("success", "Code generated successfully!");
       } else throw new Error(data.error || "Failed to generate Manim code");
     } catch (e) {
-      showStatus("red", e.message, false);
+      showStatus("danger", e.message, false);
     } finally {
       toggleLoading("generate", false);
     }
@@ -318,7 +339,7 @@ document.addEventListener("DOMContentLoaded", () => {
     els.generateButton.addEventListener("click", generateManim);
     els.toggleEditorButton.addEventListener("click", toggleEditor);
     els.previewShowEditor.addEventListener("click", () => {
-      if (els.codeEditorContainer.classList.contains('hidden')) toggleEditor();
+      if (els.codeEditorContainer.classList.contains('d-none')) toggleEditor();
     });
     els.manimPrompt.addEventListener("keypress", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
