@@ -12,13 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
     generatePromptSpinner: document.getElementById("generate-prompt-spinner"),
     videoOverlay: document.getElementById("video-overlay"),
     chatContainer: document.getElementById("chat-container"),
-    // Progress steps
-    step1: document.getElementById("step-1"),
-    step2: document.getElementById("step-2"),
-    step3: document.getElementById("step-3"),
-    label1: document.getElementById("label-1"),
-    label2: document.getElementById("label-2"),
-    label3: document.getElementById("label-3"),
   };
 
   // Generated code storage - hidden from user but needed for execution
@@ -45,45 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
     els.statusMessage.classList.remove("d-none");
     if (timeout)
       setTimeout(() => els.statusMessage.classList.add("d-none"), timeout);
-  };
-
-  // Update progress display
-  const updateProgress = (step, status) => {
-    // Reset all steps first
-    [els.step1, els.step2, els.step3].forEach((el) => {
-      el.classList.remove("active", "complete");
-      el.innerHTML = el.id.split("-")[1]; // Reset to number
-    });
-
-    [els.label1, els.label2, els.label3].forEach((el) => {
-      el.classList.remove("active", "complete");
-    });
-
-    // Set appropriate status for each step
-    for (let i = 1; i <= 3; i++) {
-      const stepEl = els[`step${i}`];
-      const labelEl = els[`label${i}`];
-
-      if (i < step) {
-        // Previous steps are complete
-        stepEl.classList.add("complete");
-        stepEl.innerHTML = ""; // Will show checkmark via CSS
-        labelEl.classList.add("complete");
-      } else if (i === step) {
-        // Current step is active
-        stepEl.classList.add("active");
-        labelEl.classList.add("active");
-      }
-      // Future steps remain default
-    }
-
-    // Update processing message
-    if (status && els.videoOverlay) {
-      const processingStep = document.getElementById("processing-step");
-      if (processingStep) {
-        processingStep.textContent = status;
-      }
-    }
   };
 
   // Chat functions
@@ -183,8 +137,13 @@ document.addEventListener("DOMContentLoaded", () => {
         els.outputVideo.load();
         els.outputVideo.play();
 
-        // Update progress step
-        updateProgress(4, "Animation ready to view!");
+        // Update processing message
+        if (els.videoOverlay) {
+          const processingStep = document.getElementById("processing-step");
+          if (processingStep) {
+            processingStep.textContent = "Animation ready to view!";
+          }
+        }
 
         // Turn off loading state in UI
         toggleLoading(false);
@@ -243,9 +202,6 @@ document.addEventListener("DOMContentLoaded", () => {
     addChatMessage(promptText, "user");
     els.manimPrompt.value = "";
 
-    // Step 1: Generating code
-    updateProgress(1, "Generating code from your description...");
-
     try {
       // First generate the code
       const genRes = await fetch("/generate_manim_code", {
@@ -262,8 +218,14 @@ document.addEventListener("DOMContentLoaded", () => {
       // Store the generated code but don't display it
       generatedCode = genData.code;
 
-      // Step 2: Creating animation
-      updateProgress(2, "Creating animation frames...");
+      // Update processing message
+      if (els.videoOverlay) {
+        const processingStep = document.getElementById("processing-step");
+        if (processingStep) {
+          processingStep.textContent = "Creating animation frames...";
+        }
+      }
+      
       addChatMessage("Generating your animation...", "assistant");
 
       // Now execute the code to create the animation
@@ -279,13 +241,25 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(execData.error || "Failed to create animation");
       }
 
-      // Step 3: Rendering (handled by log stream events)
-      updateProgress(3, "Rendering your animation...");
+      // Update processing message
+      if (els.videoOverlay) {
+        const processingStep = document.getElementById("processing-step");
+        if (processingStep) {
+          processingStep.textContent = "Rendering your animation...";
+        }
+      }
     } catch (error) {
       console.error("Animation creation failed:", error);
       showStatus("danger", error.message || "Animation creation failed", false);
       toggleLoading(false);
-      updateProgress(1, "Failed. Please try again.");
+      
+      // Update processing message on error
+      if (els.videoOverlay) {
+        const processingStep = document.getElementById("processing-step");
+        if (processingStep) {
+          processingStep.textContent = "Failed. Please try again.";
+        }
+      }
 
       if (logEventSource) {
         logEventSource.close();
