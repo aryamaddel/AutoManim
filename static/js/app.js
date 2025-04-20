@@ -1,82 +1,44 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialize CodeMirror with combined options
-  const codeEditor = CodeMirror.fromTextArea(document.getElementById("manim-code"), {
-    mode: "python",
-    theme: "dracula",
-    lineNumbers: true,
-    indentUnit: 4,
-    tabSize: 4,
-    smartIndent: true,
-    indentWithTabs: false,
-    lineWrapping: true,
-    matchBrackets: true,
-    autoCloseBrackets: true,
-    extraKeys: {
-      Tab: cm => cm.somethingSelected() ? cm.indentSelection("add") : cm.replaceSelection("    ", "end", "+input"),
-      "Ctrl-/": "toggleComment",
-      "Cmd-/": "toggleComment",
-    },
-  });
-
   // Gather DOM elements
   const els = {
-    executeButton: document.getElementById("execute-button"),
-    generateButton: document.getElementById("generate-button"),
+    createButton: document.getElementById("create-button"),
     clearChatButton: document.getElementById("clear-chat-btn"),
-    toggleEditorButton: document.getElementById("toggle-editor-button"),
-    toggleEditorText: document.getElementById("toggle-editor-text"),
-    previewShowEditor: document.getElementById("preview-show-editor"),
-    codeEditorContainer: document.getElementById("code-editor-container"),
-    codePreview: document.getElementById("code-preview"),
-    codePreviewLines: document.getElementById("code-preview-lines"),
-    codeEditor: codeEditor,
     outputVideo: document.getElementById("output-video"),
     statusMessage: document.getElementById("status-message"),
     statusText: document.getElementById("status-text"),
     statusContainer: document.getElementById("status-container"),
     manimPrompt: document.getElementById("manim-prompt"),
-    executeSpinner: document.getElementById("execute-spinner"),
-    generateSpinner: document.getElementById("generate-spinner"),
+    createSpinner: document.getElementById("create-spinner"),
     generatePromptSpinner: document.getElementById("generate-prompt-spinner"),
     videoOverlay: document.getElementById("video-overlay"),
     chatContainer: document.getElementById("chat-container"),
     logDisplay: document.getElementById("log-display"),
     logLines: document.getElementById("log-lines"),
+    processingStep: document.getElementById("processing-step"),
+    // Progress steps
+    step1: document.getElementById("step-1"),
+    step2: document.getElementById("step-2"),
+    step3: document.getElementById("step-3"),
+    label1: document.getElementById("label-1"),
+    label2: document.getElementById("label-2"),
+    label3: document.getElementById("label-3"),
   };
+
+  // Generated code storage - hidden from user but needed for execution
+  let generatedCode = "";
 
   // UI utility functions
-  const toggleEditor = () => {
-    const isVisible = !els.codeEditorContainer.classList.contains('d-none');
-    
-    els.codeEditorContainer.classList.toggle('d-none', isVisible);
-    els.codePreview.classList.toggle('d-none', !isVisible);
-    els.toggleEditorText.textContent = isVisible ? 'Show Editor' : 'Hide Editor';
-    
-    if (!isVisible) els.codeEditor.refresh();
-  };
-  
-  const updateCodePreview = () => {
-    const code = els.codeEditor.getValue();
-    const lineCount = code.split('\n').filter(line => line.trim()).length;
-    els.codePreviewLines.textContent = lineCount;
-  };
-
-  const toggleLoading = (type, state) => {
+  const toggleLoading = (state) => {
     if (state) {
-      els[`${type}Spinner`].classList.remove("d-none");
+      els.createSpinner.classList.remove("d-none");
+      els.videoOverlay.classList.remove("d-none");
+      els.videoOverlay.classList.add("d-flex");
     } else {
-      els[`${type}Spinner`].classList.add("d-none");
+      els.createSpinner.classList.add("d-none");
+      els.videoOverlay.classList.add("d-none");
+      els.videoOverlay.classList.remove("d-flex");
     }
-    els[`${type}Button`].disabled = state;
-    if (type === "execute") {
-      if (state) {
-        els.videoOverlay.classList.remove("d-none");
-        els.videoOverlay.classList.add("d-flex");
-      } else {
-        els.videoOverlay.classList.add("d-none");
-        els.videoOverlay.classList.remove("d-flex");
-      }
-    }
+    els.createButton.disabled = state;
   };
 
   const showStatus = (type, message, timeout = 3000) => {
@@ -84,25 +46,52 @@ document.addEventListener("DOMContentLoaded", () => {
     els.statusText.className = `small mb-0`;
     els.statusText.textContent = message;
     els.statusMessage.classList.remove("d-none");
-    if (timeout) setTimeout(() => els.statusMessage.classList.add("d-none"), timeout);
+    if (timeout)
+      setTimeout(() => els.statusMessage.classList.add("d-none"), timeout);
+  };
+
+  // Update progress display
+  const updateProgress = (step, status) => {
+    // Reset all steps first
+    [els.step1, els.step2, els.step3].forEach((el) => {
+      el.classList.remove("active", "complete");
+      el.innerHTML = el.id.split("-")[1]; // Reset to number
+    });
+
+    [els.label1, els.label2, els.label3].forEach((el) => {
+      el.classList.remove("active", "complete");
+    });
+
+    // Set appropriate status for each step
+    for (let i = 1; i <= 3; i++) {
+      const stepEl = els[`step${i}`];
+      const labelEl = els[`label${i}`];
+
+      if (i < step) {
+        // Previous steps are complete
+        stepEl.classList.add("complete");
+        stepEl.innerHTML = ""; // Will show checkmark via CSS
+        labelEl.classList.add("complete");
+      } else if (i === step) {
+        // Current step is active
+        stepEl.classList.add("active");
+        labelEl.classList.add("active");
+      }
+      // Future steps remain default
+    }
+
+    // Update processing message
+    if (status) {
+      els.processingStep.textContent = status;
+    }
   };
 
   // Chat functions
   const addChatMessage = (message, role) => {
     const messageDiv = document.createElement("div");
-    messageDiv.className = role === "user" ? "user-message p-3" : "assistant-message p-3";
-
-    if (role === "user") {
-      messageDiv.textContent = message;
-    } else {
-      const numLines = message.split("\n").filter(line => line.trim() !== "").length;
-      messageDiv.innerHTML = `<div class="code-preview">
-        <p class="small font-monospace d-flex align-items-center">
-          <span class="me-2" style="color: #a5b4fc"><i>Code generated:</i></span>
-          <span class="bg-dark bg-opacity-50 px-2 py-1 rounded">${numLines} lines</span>
-        </p>
-      </div>`;
-    }
+    messageDiv.className =
+      role === "user" ? "user-message p-3" : "assistant-message p-3";
+    messageDiv.textContent = message;
 
     // Remove the empty state if it exists
     const emptyState = els.chatContainer.querySelector(".text-center.py-4");
@@ -123,7 +112,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (data.chat_history && data.chat_history.length > 0) {
           els.chatContainer.innerHTML = "";
           data.chat_history.forEach((message) => {
-            addChatMessage(message.content, message.role);
+            // Don't display code in the chat, only user messages and system responses
+            if (
+              message.role === "user" ||
+              (message.role === "assistant" &&
+                !message.content.includes("class MainScene"))
+            ) {
+              addChatMessage(message.content, message.role);
+            }
           });
         }
       }
@@ -146,6 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="text-secondary small">Start a conversation with AutoManim</span>
           </div>
         `;
+        generatedCode = "";
       }
     } catch (error) {
       console.error("Failed to clear chat history:", error);
@@ -154,14 +151,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Log display management
   let logEventSource = null;
-  const maxLogLines = 8;  // Increased to show more important logs
+  const maxLogLines = 8; // Increased to show more important logs
 
   const addLogLine = (text, type = "info") => {
     // Skip unimportant logs
-    if (text === "Animation frame rendered" && 
-        document.querySelectorAll('.log-line:contains("Animation frame rendered")').length > 0) {
+    if (
+      text === "Animation frame rendered" &&
+      document.querySelectorAll(
+        '.log-line:contains("Animation frame rendered")'
+      ).length > 0
+    ) {
       // Just update the last "Animation frame rendered" line instead of adding a new one
-      const renderingLines = document.querySelectorAll('.log-line.rendering-progress');
+      const renderingLines = document.querySelectorAll(
+        ".log-line.rendering-progress"
+      );
       if (renderingLines.length > 0) {
         renderingLines[renderingLines.length - 1].textContent += ".";
         return;
@@ -171,12 +174,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // Create a new log line element
     const logLine = document.createElement("div");
     logLine.className = `log-line ${type}`;
-    
+
     // Add special class for rendering progress
     if (text === "Animation frame rendered") {
       logLine.classList.add("rendering-progress");
     }
-    
+
     logLine.textContent = text;
 
     // Add the new line
@@ -212,9 +215,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Show the log display
     els.logDisplay.classList.add("active");
 
-    // Add an initial line
-    addLogLine("Starting Manim animation...", "info");
-
     // Connect to SSE endpoint
     logEventSource = new EventSource("/stream_logs");
 
@@ -239,8 +239,11 @@ document.addEventListener("DOMContentLoaded", () => {
         // Add success message
         addLogLine("Animation rendered successfully!", "success");
 
+        // Update progress step
+        updateProgress(4, "Animation ready to view!");
+
         // Turn off loading state in UI
-        toggleLoading("execute", false);
+        toggleLoading(false);
         showStatus("success", "Animation generated successfully!");
 
         // Keep log display visible
@@ -252,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const errorMessage = event.data.substring("ERROR:".length);
         addLogLine(errorMessage.trim(), "error");
         showStatus("danger", errorMessage.trim(), false);
-        toggleLoading("execute", false);
+        toggleLoading(false);
         return;
       }
 
@@ -264,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Log stream error");
       addLogLine("Connection lost. Check server status.", "error");
       endLogStream();
-      toggleLoading("execute", false);
+      toggleLoading(false);
     };
   };
 
@@ -279,72 +282,76 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 500);
   };
 
-  async function executeManim() {
-    toggleLoading("execute", true);
-    showStatus("primary", "Executing Manim code...", false);
-    startLogStream();
+  // Combined function to generate and execute Manim animation
+  async function createAnimation() {
+    const promptText = els.manimPrompt.value.trim();
+    if (!promptText) {
+      return showStatus(
+        "danger",
+        "Please describe the animation you want to create",
+        false
+      );
+    }
+
+    toggleLoading(true);
+    showStatus("primary", "Processing your animation request...", false);
+    addChatMessage(promptText, "user");
+    els.manimPrompt.value = "";
+
+    // Step 1: Generating code
+    updateProgress(1, "Generating code from your description...");
 
     try {
-      const res = await fetch("/execute_manim", {
+      // First generate the code
+      const genRes = await fetch("/generate_manim_code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: els.codeEditor.getValue() }),
+        body: JSON.stringify({ manimPrompt: promptText }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to execute Manim code");
-    } catch (e) {
-      addLogLine(e.message, "error");
-      showStatus("danger", e.message, false);
-      toggleLoading("execute", false);
-      els.logDisplay.classList.remove("active");
-      endLogStream();
+      const genData = await genRes.json();
+      if (!genRes.ok) {
+        throw new Error(genData.error || "Failed to generate animation code");
+      }
+
+      // Store the generated code but don't display it
+      generatedCode = genData.code;
+
+      // Step 2: Creating animation
+      updateProgress(2, "Creating animation frames...");
+      addChatMessage("Generating your animation...", "assistant");
+
+      // Now execute the code to create the animation
+      startLogStream();
+      const execRes = await fetch("/execute_manim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: generatedCode }),
+      });
+
+      const execData = await execRes.json();
+      if (!execRes.ok) {
+        throw new Error(execData.error || "Failed to create animation");
+      }
+
+      // Step 3: Rendering (handled by log stream events)
+      updateProgress(3, "Rendering your animation...");
+    } catch (error) {
+      console.error("Animation creation failed:", error);
+      showStatus("danger", error.message || "Animation creation failed", false);
+      addLogLine(error.message, "error");
+      toggleLoading(false);
+      updateProgress(1, "Failed. Please try again.");
     }
   }
 
-  async function generateManim() {
-    if (!els.manimPrompt.value.trim())
-      return showStatus("danger", "Please enter a prompt", false);
-      
-    toggleLoading("generate", true);
-    showStatus("primary", "Generating Manim code...", false);
-    addChatMessage(els.manimPrompt.value.trim(), "user");
-
-    try {
-      const res = await fetch("/generate_manim_code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ manimPrompt: els.manimPrompt.value }),
-      });
-      
-      const data = await res.json();
-      if (res.ok) {
-        els.codeEditor.setValue(data.code);
-        els.codeEditor.refresh();
-        updateCodePreview();
-        addChatMessage(data.code, "assistant");
-        els.manimPrompt.value = "";
-        showStatus("success", "Code generated successfully!");
-      } else throw new Error(data.error || "Failed to generate Manim code");
-    } catch (e) {
-      showStatus("danger", e.message, false);
-    } finally {
-      toggleLoading("generate", false);
-    }
-  }
-
-  // Event listeners - using a common handler pattern
+  // Event listeners
   const setupListeners = () => {
-    els.executeButton.addEventListener("click", executeManim);
-    els.generateButton.addEventListener("click", generateManim);
-    els.toggleEditorButton.addEventListener("click", toggleEditor);
-    els.previewShowEditor.addEventListener("click", () => {
-      if (els.codeEditorContainer.classList.contains('d-none')) toggleEditor();
-    });
+    els.createButton.addEventListener("click", createAnimation);
     els.manimPrompt.addEventListener("keypress", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        generateManim();
+        createAnimation();
       }
     });
     els.clearChatButton.addEventListener("click", clearChatHistory);
@@ -352,7 +359,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialization
   const init = () => {
-    updateCodePreview();
     fetchChatHistory();
     setupListeners();
   };
