@@ -18,115 +18,6 @@ log_queue = queue.Queue()
 # Flag to indicate if the Manim process is running
 manim_running = False
 
-# Patterns to include in general logs - update with more focused patterns
-LOG_PATTERNS = [
-    "Animation ", "Playing ", "Creating ", "Rendering ",
-    "File ready at", "Rendered", "Played ", "Combining", "movie file"
-]
-
-# Collect traceback for proper error display
-class ErrorTracker:
-    def __init__(self):
-        self.in_traceback = False
-        self.traceback_lines = []
-        self.error_type = None
-        self.error_message = None
-    
-    def process_line(self, line):
-        """Process a line and determine if it's part of a traceback"""
-        # Start of a new traceback
-        if "Traceback (most recent call last):" in line:
-            self.in_traceback = True
-            self.traceback_lines = [line]
-            return None  # Don't output yet, collect the entire traceback
-        
-        # We're in a traceback, collect lines
-        if self.in_traceback:
-            self.traceback_lines.append(line)
-            
-            # If this line contains the error type and message (last line of traceback)
-            if ": " in line and not line.startswith(" ") and not line.startswith("File "):
-                parts = line.split(": ", 1)
-                if len(parts) == 2:
-                    self.error_type = parts[0].strip()
-                    self.error_message = parts[1].strip()
-                    self.in_traceback = False
-                    
-                    # Format the entire traceback nicely and return it
-                    return self.format_traceback()
-                    
-            return None  # Still collecting traceback
-            
-        # Normal line, not in traceback
-        return line
-
-    def format_traceback(self):
-        """Format the collected traceback into a readable format"""
-        if not self.traceback_lines:
-            return None
-        
-        formatted = ["ERROR: ⚠️ Manim Execution Failed ⚠️"]
-        formatted.append(f"ERROR: {self.error_type}: {self.error_message}")
-        
-        # Extract file and line info from traceback
-        file_lines = []
-        for line in self.traceback_lines:
-            if line.strip().startswith("File "):
-                # Extract filename, line number and context
-                match = re.search(r'File "([^"]+)", line (\d+), in (.+)', line)
-                if match:
-                    filename = os.path.basename(match.group(1))
-                    line_num = match.group(2)
-                    context = match.group(3)
-                    file_lines.append(f"ERROR: 📄 {filename}:{line_num} in {context}")
-        
-        # Add file info if we found any
-        if file_lines:
-            formatted.append("ERROR: Stack trace:")
-            formatted.extend(file_lines)
-        
-        return formatted
-
-def process_log_line(line, error_tracker):
-    """Process a log line with error tracking"""
-    line = line.strip()
-    if not line:
-        return None
-        
-    # First check if this is part of a traceback
-    result = error_tracker.process_line(line)
-    if result is not None:
-        if isinstance(result, list):
-            return result  # Return list of formatted traceback lines
-        return result  # Regular processed line
-    
-    # Check if this is an error line
-    if "error" in line.lower() or "exception" in line.lower():
-        return f"ERROR: {line}"
-    
-    # Check if this is a warning
-    if "warning" in line.lower():
-        return f"WARNING: {line}"
-        
-    # Only show important log lines - be more selective
-    if any(pattern.lower() in line.lower() for pattern in LOG_PATTERNS):
-        # Clean up the log line for better readability
-        # Remove file paths and just keep the essential message
-        if "Partial movie file written in" in line:
-            return "Animation frame rendered"
-        
-        # Clean up animation percentage display
-        if "Animation" in line and ": 0%|" in line:
-            return line.split("|")[0].strip()
-            
-        # Simplify rendered message
-        if "File ready at" in line:
-            return "Video compilation complete"
-        
-        return line.strip()
-    
-    # Skip most other lines
-    return None
 
 def find_video_file(static_folder, scene_name):
     """Find the generated video file"""
@@ -188,71 +79,68 @@ def execute_manim():
         def execute_manim_thread():
             global manim_running
             error_detected = False
-            error_tracker = ErrorTracker()
-            
+
             try:
-                # Start Manim process
+                # Print terminal message to show we're starting
+                print("\n--- Starting Manim Animation Process ---")
+
+                # Start Manim process with redirected output to suppress logs
                 process = subprocess.Popen(
                     ["manim", "-ql", scene_path, scene_name],
                     cwd=app.static_folder,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
+                    stdout=subprocess.DEVNULL,  # Redirect stdout to null
+                    stderr=subprocess.PIPE,  # Only capture stderr for errors
                     text=True,
-                    bufsize=1,
-                    universal_newlines=True
                 )
-                
-                # Stream logs with better error tracking
-                for line in process.stdout:
-                    processed = process_log_line(line, error_tracker)
-                    
-                    # Skip lines that don't need to be displayed
-                    if processed is None:
-                        continue
-                    
-                    # Handle list of lines (formatted traceback)
-                    if isinstance(processed, list):
-                        for trace_line in processed:
-                            log_queue.put(trace_line)
-                            if trace_line.startswith("ERROR:"):
-                                error_detected = True
-                    else:
-                        log_queue.put(processed)
-                        if processed.startswith("ERROR:"):
+
+                # Only process stderr for critical errors
+                if process.stderr:
+                    for line in process.stderr:
+                        if (
+                            "error" in line.lower()
+                            or "exception" in line.lower()
+                            or "traceback" in line.lower()
+                        ):
+                            print(f"Error detected: {line.strip()}")
+                            log_queue.put(f"ERROR:{line.strip()}")
                             error_detected = True
-                
-                # Handle process completion
+
+                # Wait for process to complete
                 process.wait()
+
+                # Check return code
                 if process.returncode != 0:
                     if not error_detected:
-                        log_queue.put(f"ERROR: Manim execution failed with code {process.returncode}")
-                    
+                        log_queue.put(
+                            f"ERROR:Process failed with code {process.returncode}"
+                        )
+
                     manim_running = False
+                    print("--- Manim Process Failed ---")
                     return
-                    
+
                 # Find the generated video only if no errors were detected
                 if not error_detected:
                     video_url, error = find_video_file(app.static_folder, scene_name)
                     if error:
-                        log_queue.put(f"ERROR: {error}")
+                        log_queue.put(f"ERROR:{error}")
                         manim_running = False
                         return
-                        
+
                     # Success - video is ready
                     log_queue.put(f"VIDEO_READY:{video_url}")
-                    log_queue.put("SUCCESS: Animation rendered successfully! ✨")
-                else:
-                    log_queue.put("ERROR: Animation could not be rendered due to errors")
-                    manim_running = False
-                
+
+                print("--- Manim Process Completed Successfully ---")
+
             except Exception as e:
-                log_queue.put(f"ERROR: System error: [{e.__class__.__name__}] {str(e)}")
+                print(f"System error: [{e.__class__.__name__}] {str(e)}")
+                log_queue.put(f"ERROR:System error: {str(e)}")
             finally:
                 manim_running = False
-        
+
         # Start execution in background thread
         threading.Thread(target=execute_manim_thread, daemon=True).start()
-        
+
         return jsonify({"success": True, "message": "Manim execution started"})
 
     except Exception as e:
@@ -310,14 +198,19 @@ def generate_manim_code():
         for ClientClass in clients:
             try:
                 client = ClientClass()
-                code = client.generate_code(animation_description, session["chat_history"])
+                code = client.generate_code(
+                    animation_description, session["chat_history"]
+                )
                 break  # Stop if successful
             except Exception as e:
                 error_messages.append(f"{ClientClass.__name__} error: {str(e)}")
                 continue
-        
+
         if not code:
-            return jsonify({"error": f"All APIs failed: {', '.join(error_messages)}"}), 500
+            return (
+                jsonify({"error": f"All APIs failed: {', '.join(error_messages)}"}),
+                500,
+            )
 
         # Clean up code
         code = clean_generated_code(code)
@@ -326,10 +219,13 @@ def generate_manim_code():
         session["chat_history"].append({"role": "assistant", "content": code})
         session.modified = True
 
-        return jsonify({"success": True, "code": code, "chat_history": session["chat_history"]})
+        return jsonify(
+            {"success": True, "code": code, "chat_history": session["chat_history"]}
+        )
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 def clean_generated_code(code):
     """Clean generated code by removing markdown and ensuring MainScene class exists"""
@@ -340,9 +236,13 @@ def clean_generated_code(code):
     code = code.strip()
 
     if "class MainScene" not in code:
-        code = "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        " + code
+        code = (
+            "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
+            + code
+        )
 
     return code
+
 
 @app.route("/get_chat_history", methods=["GET"])
 def get_chat_history():

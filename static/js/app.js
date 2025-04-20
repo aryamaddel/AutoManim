@@ -12,9 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
     generatePromptSpinner: document.getElementById("generate-prompt-spinner"),
     videoOverlay: document.getElementById("video-overlay"),
     chatContainer: document.getElementById("chat-container"),
-    logDisplay: document.getElementById("log-display"),
-    logLines: document.getElementById("log-lines"),
-    processingStep: document.getElementById("processing-step"),
     // Progress steps
     step1: document.getElementById("step-1"),
     step2: document.getElementById("step-2"),
@@ -81,8 +78,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Update processing message
-    if (status) {
-      els.processingStep.textContent = status;
+    if (status && els.videoOverlay) {
+      const processingStep = document.getElementById("processing-step");
+      if (processingStep) {
+        processingStep.textContent = status;
+      }
     }
   };
 
@@ -149,59 +149,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Log display management
+  // Simplified log monitoring - just for updating video status
   let logEventSource = null;
-  const maxLogLines = 8; // Increased to show more important logs
-
-  const addLogLine = (text, type = "info") => {
-    // Skip unimportant logs
-    if (
-      text === "Animation frame rendered" &&
-      document.querySelectorAll(
-        '.log-line:contains("Animation frame rendered")'
-      ).length > 0
-    ) {
-      // Just update the last "Animation frame rendered" line instead of adding a new one
-      const renderingLines = document.querySelectorAll(
-        ".log-line.rendering-progress"
-      );
-      if (renderingLines.length > 0) {
-        renderingLines[renderingLines.length - 1].textContent += ".";
-        return;
-      }
-    }
-
-    // Create a new log line element
-    const logLine = document.createElement("div");
-    logLine.className = `log-line ${type}`;
-
-    // Add special class for rendering progress
-    if (text === "Animation frame rendered") {
-      logLine.classList.add("rendering-progress");
-    }
-
-    logLine.textContent = text;
-
-    // Add the new line
-    els.logLines.appendChild(logLine);
-
-    // Scroll to bottom
-    els.logLines.scrollTop = els.logLines.scrollHeight;
-
-    // Check if we need to remove old lines
-    const lines = els.logLines.querySelectorAll(".log-line");
-    if (lines.length > maxLogLines) {
-      // Add fade-out class to the oldest line
-      lines[0].classList.add("fade-out");
-
-      // Remove after animation completes
-      setTimeout(() => {
-        if (lines[0].parentNode === els.logLines) {
-          els.logLines.removeChild(lines[0]);
-        }
-      }, 500); // Match the CSS transition duration
-    }
-  };
 
   const startLogStream = () => {
     // Close any existing stream
@@ -209,13 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
       logEventSource.close();
     }
 
-    // Clear existing log lines
-    els.logLines.innerHTML = "";
-
-    // Show the log display
-    els.logDisplay.classList.add("active");
-
-    // Connect to SSE endpoint
+    // Connect to SSE endpoint for essential updates only
     logEventSource = new EventSource("/stream_logs");
 
     logEventSource.onmessage = (event) => {
@@ -224,10 +167,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (event.data === "STREAM_END") {
-        endLogStream();
+        if (logEventSource) {
+          logEventSource.close();
+          logEventSource = null;
+        }
         return;
       }
 
+      // Handle video ready event
       if (event.data.startsWith("VIDEO_READY:")) {
         const videoUrl = event.data.substring("VIDEO_READY:".length);
         // Update video source and play
@@ -236,9 +183,6 @@ document.addEventListener("DOMContentLoaded", () => {
         els.outputVideo.load();
         els.outputVideo.play();
 
-        // Add success message
-        addLogLine("Animation rendered successfully!", "success");
-
         // Update progress step
         updateProgress(4, "Animation ready to view!");
 
@@ -246,40 +190,41 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleLoading(false);
         showStatus("success", "Animation generated successfully!");
 
-        // Keep log display visible
+        // End the stream
+        if (logEventSource) {
+          logEventSource.close();
+          logEventSource = null;
+        }
         return;
       }
 
+      // Handle errors
       if (event.data.startsWith("ERROR:")) {
-        // Handle errors
         const errorMessage = event.data.substring("ERROR:".length);
-        addLogLine(errorMessage.trim(), "error");
         showStatus("danger", errorMessage.trim(), false);
         toggleLoading(false);
+
+        // End the stream on error
+        if (logEventSource) {
+          logEventSource.close();
+          logEventSource = null;
+        }
         return;
       }
 
-      // Regular log line
-      addLogLine(event.data);
+      // Other log events are ignored in the UI (will show in terminal only)
     };
 
     logEventSource.onerror = () => {
       console.error("Log stream error");
-      addLogLine("Connection lost. Check server status.", "error");
-      endLogStream();
+      showStatus("danger", "Connection lost. Check server status.", false);
       toggleLoading(false);
+
+      if (logEventSource) {
+        logEventSource.close();
+        logEventSource = null;
+      }
     };
-  };
-
-  const endLogStream = () => {
-    if (logEventSource) {
-      logEventSource.close();
-      logEventSource = null;
-    }
-
-    setTimeout(() => {
-      addLogLine("Execution complete", "success");
-    }, 500);
   };
 
   // Combined function to generate and execute Manim animation
@@ -339,9 +284,13 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       console.error("Animation creation failed:", error);
       showStatus("danger", error.message || "Animation creation failed", false);
-      addLogLine(error.message, "error");
       toggleLoading(false);
       updateProgress(1, "Failed. Please try again.");
+
+      if (logEventSource) {
+        logEventSource.close();
+        logEventSource = null;
+      }
     }
   }
 
