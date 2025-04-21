@@ -1,10 +1,8 @@
 import re
 import os
 import subprocess
-import threading
-import queue
-import time
-from flask import Flask, render_template, request, jsonify, session, Response
+from flask import Flask, render_template, request, jsonify, session
+
 from utils.gemini_client import GeminiClient
 from utils.groq_client import GroqClient
 
@@ -13,10 +11,10 @@ app.secret_key = os.environ.get(
     "FLASK_SECRET_KEY", "dev_secret_key"
 )  # Set a secret key for sessions
 
-# Queue for passing results between threads
-result_queue = queue.Queue()
 # Flag to indicate if the Manim process is running
 manim_running = False
+# Simple storage for result
+manim_result = None
 
 
 def find_video_file(static_folder, scene_name):
@@ -52,7 +50,7 @@ def index():
 
 @app.route("/execute_manim", methods=["POST"])
 def execute_manim():
-    global manim_running
+    global manim_running, manim_result
     try:
         manim_code = request.json.get("code")
         if not manim_code:
@@ -70,88 +68,68 @@ def execute_manim():
 
         scene_name = scene_name_match.group(1)
 
-        # Clear the queue and set running flag
-        while not result_queue.empty():
-            result_queue.get()
+        # Reset state
         manim_running = True
+        manim_result = None
 
-        # Define the manim execution process inline
-        def execute_manim_thread():
-            global manim_running
+        # Simple print statement for debugging
+        print("--- Starting Manim Animation Process ---")
 
-            try:
-                # Simple print statement for debugging
-                print("\n--- Starting Manim Animation Process ---")
+        # Start Manim process directly
+        process = subprocess.Popen(
+            ["manim", "-ql", scene_path, scene_name],
+            cwd=app.static_folder,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
 
-                # Start Manim process
-                process = subprocess.Popen(
-                    ["manim", "-ql", scene_path, scene_name],
-                    cwd=app.static_folder,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                )
+        # Simple print statement for debugging
+        print(f"--- Manim process started for scene: {scene_name} ---")
 
-                # Simple print statement for debugging
-                print(f"--- Manim process started for scene: {scene_name} ---")
+        # Wait for the process to complete
+        stdout, stderr = process.communicate()
 
-                # Wait for process to complete
-                stdout, stderr = process.communicate()
-
-                # Check for errors
-                if process.returncode != 0:
-                    print(
-                        f"--- Manim Process Failed with code {process.returncode} ---"
-                    )
-                    print(f"Error output: {stderr}")
-                    result_queue.put(
-                        {"status": "error", "message": f"Process failed: {stderr}"}
-                    )
-                    manim_running = False
-                    return
-
-                # Find the generated video
-                video_url, error = find_video_file(app.static_folder, scene_name)
-                if error:
-                    print(f"--- Video file error: {error} ---")
-                    result_queue.put({"status": "error", "message": error})
-                    manim_running = False
-                    return
-
+        # Check for errors
+        if process.returncode != 0:
+            print(f"--- Manim Process Failed with code {process.returncode} ---")
+            print(f"Error output: {stderr}")
+            manim_result = {"status": "error", "message": f"Process failed: {stderr}"}
+        else:
+            # Find the generated video
+            video_url, error = find_video_file(app.static_folder, scene_name)
+            if error:
+                print(f"--- Video file error: {error} ---")
+                manim_result = {"status": "error", "message": error}
+            else:
                 # Success - video is ready
                 print(f"--- Manim Process Completed Successfully: {video_url} ---")
-                result_queue.put({"status": "success", "video_url": video_url})
+                manim_result = {"status": "success", "video_url": video_url}
 
-            except Exception as e:
-                print(f"System error: [{e.__class__.__name__}] {str(e)}")
-                result_queue.put({"status": "error", "message": str(e)})
-            finally:
-                manim_running = False
-
-        # Start execution in background thread
-        threading.Thread(target=execute_manim_thread, daemon=True).start()
-
+        manim_running = False
         return jsonify({"success": True, "message": "Manim execution started"})
 
     except Exception as e:
+        print(f"--- Exception: {str(e)} ---")
         manim_running = False
+        manim_result = {"status": "error", "message": str(e)}
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/check_manim_status", methods=["GET"])
 def check_manim_status():
     """Simple endpoint to check if animation is ready"""
-    try:
-        if not result_queue.empty():
-            result = result_queue.get()
-            return jsonify(result)
+    global manim_result, manim_running
 
-        if manim_running:
-            return jsonify({"status": "processing"})
-        else:
-            return jsonify({"status": "idle"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+    if manim_result is not None:
+        result = manim_result
+        manim_result = None
+        return jsonify(result)
+
+    if manim_running:
+        return jsonify({"status": "processing"})
+    else:
+        return jsonify({"status": "idle"})
 
 
 @app.route("/generate_manim_code", methods=["POST"])
