@@ -1,8 +1,5 @@
-import re
-import os
-import subprocess
+import re, os, subprocess
 from flask import Flask, render_template, request, jsonify, session
-
 from utils.gemini_client import GeminiClient
 from utils.groq_client import GroqClient
 
@@ -10,30 +7,24 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_key")
 
 # Global state
-manim_running = False
-manim_result = None
+manim_running, manim_result = False, None
 
 
 def find_video_file(static_folder, scene_name):
-    """Find the generated video file"""
     video_dir = os.path.join(static_folder, "media", "videos", "manim_code", "480p15")
-
     if not os.path.exists(video_dir):
         return None, "Video directory not found"
 
-    video_files = [
+    videos = [
         f
         for f in os.listdir(video_dir)
         if f.startswith(scene_name) and f.endswith(".mp4")
     ]
-
-    if not video_files:
+    if not videos:
         return None, "No video found for the scene"
 
-    latest_video = max(
-        video_files, key=lambda f: os.path.getmtime(os.path.join(video_dir, f))
-    )
-    return f"/static/media/videos/manim_code/480p15/{latest_video}", None
+    latest = max(videos, key=lambda f: os.path.getmtime(os.path.join(video_dir, f)))
+    return f"/static/media/videos/manim_code/480p15/{latest}", None
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -102,52 +93,36 @@ def execute_manim():
 
 @app.route("/check_manim_status", methods=["GET"])
 def check_manim_status():
-    """Check if animation is ready"""
     global manim_result, manim_running
-
-    if manim_result is not None:
-        result = manim_result
-        manim_result = None
+    if manim_result:
+        result, manim_result = manim_result, None
         return jsonify(result)
-
     return jsonify({"status": "processing" if manim_running else "idle"})
 
 
 @app.route("/generate_manim_code", methods=["POST"])
 def generate_manim_code():
     try:
-        animation_description = request.json.get("manimPrompt")
-        if not animation_description:
+        desc = request.json.get("manimPrompt")
+        if not desc:
             return jsonify({"error": "No animation description provided"}), 400
 
-        # Initialize and update chat history
         if "chat_history" not in session:
             session["chat_history"] = []
-        session["chat_history"].append(
-            {"role": "user", "content": animation_description}
-        )
+        session["chat_history"].append({"role": "user", "content": desc})
 
-        # Try available AI clients
-        clients = [GeminiClient, GroqClient]
-        code, error_messages = None, []
-
-        for ClientClass in clients:
+        # Try AI clients
+        code, errs = None, []
+        for Client in [GeminiClient, GroqClient]:
             try:
-                client = ClientClass()
-                code = client.generate_code(
-                    animation_description, session["chat_history"]
-                )
+                code = Client().generate_code(desc, session["chat_history"])
                 break
             except Exception as e:
-                error_messages.append(f"{ClientClass.__name__} error: {str(e)}")
+                errs.append(f"{Client.__name__} error: {str(e)}")
 
         if not code:
-            return (
-                jsonify({"error": f"All APIs failed: {', '.join(error_messages)}"}),
-                500,
-            )
+            return jsonify({"error": f"All APIs failed: {', '.join(errs)}"}), 500
 
-        # Clean up code and update history
         code = clean_generated_code(code)
         session["chat_history"].append({"role": "assistant", "content": code})
         session.modified = True
@@ -155,28 +130,23 @@ def generate_manim_code():
         return jsonify(
             {"success": True, "code": code, "chat_history": session["chat_history"]}
         )
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 def clean_generated_code(code):
-    """Clean generated code"""
     code = re.sub(r"<think>.*?</think>", "", code, flags=re.DOTALL)
     code = re.sub(r"^```python\s*|^```\s*|\s*```$", "", code).strip()
-
     if "class MainScene" not in code:
         code = (
             "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
             + code
         )
-
     return code
 
 
 @app.route("/get_chat_history", methods=["GET"])
 def get_chat_history():
-    """Get current chat history"""
     if "chat_history" not in session:
         session["chat_history"] = []
     return jsonify({"chat_history": session["chat_history"]})
@@ -184,7 +154,6 @@ def get_chat_history():
 
 @app.route("/clear_chat_history", methods=["POST"])
 def clear_chat_history():
-    """Clear chat history"""
     session["chat_history"] = []
     session.modified = True
     return jsonify({"success": True})
