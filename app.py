@@ -22,13 +22,11 @@ def execute_manim():
         if not manim_code:
             return jsonify({"error": "No code provided"}), 400
 
-        # Setup and save the scene file
         scene_path = os.path.join(app.static_folder, "manim_code.py")
         os.makedirs(app.static_folder, exist_ok=True)
         with open(scene_path, "w") as f:
             f.write(manim_code)
 
-        # Extract scene name
         scene_name_match = re.search(r"class\s+(\w+)\((.*?)Scene\):", manim_code)
         if not scene_name_match:
             return jsonify({"error": "Could not find scene class in the code"}), 400
@@ -44,7 +42,6 @@ def execute_manim():
         )
         _, stderr = process.communicate()
 
-        # Handle process results directly
         if process.returncode != 0:
             print(f"--- Manim Failed: {stderr} ---")
             return jsonify(
@@ -54,7 +51,6 @@ def execute_manim():
                 }
             )
 
-        # Look for the video file
         video_dir = os.path.join(
             app.static_folder, "media", "videos", "manim_code", "480p15"
         )
@@ -71,22 +67,18 @@ def execute_manim():
             for f in os.listdir(video_dir)
             if f.startswith(scene_name) and f.endswith(".mp4")
         ]
-
         if not videos:
             return jsonify(
                 {"status": "error", "message": "No video found for the scene"}
             )
 
-        # Get the latest video
-        latest = max(
-            videos,
-            key=lambda f: os.path.getmtime(os.path.join(video_dir, f)),
+        latest = max(videos, key=lambda f: os.path.getmtime(os.path.join(video_dir, f)))
+        return jsonify(
+            {
+                "status": "success",
+                "video_url": f"/static/media/videos/manim_code/480p15/{latest}",
+            }
         )
-        video_url = f"/static/media/videos/manim_code/480p15/{latest}"
-
-        print(f"--- Manim Process: successful ---")
-        return jsonify({"status": "success", "video_url": video_url})
-
     except Exception as e:
         print(f"Exception: {str(e)}")
         return jsonify({"status": "error", "message": "Animation creation failed"}), 500
@@ -99,14 +91,11 @@ def generate_manim_code():
         if not desc:
             return jsonify({"error": "No animation description provided"}), 400
 
-        # Update chat history
         if "chat_history" not in session:
             session["chat_history"] = []
         session["chat_history"].append({"role": "user", "content": desc})
 
-        # Try AI clients
-        code = None
-        errors = []
+        code, errors = None, []
         for Client in [GeminiClient, GroqClient]:
             try:
                 code = Client().generate_code(desc, session["chat_history"])
@@ -117,7 +106,6 @@ def generate_manim_code():
         if not code:
             return jsonify({"error": "All AI APIs failed"}), 500
 
-        # Clean up the code
         code = re.sub(r"<think>.*?</think>", "", code, flags=re.DOTALL)
         code = re.sub(r"^```python\s*|^```\s*|\s*```$", "", code).strip()
         if "class MainScene" not in code:
@@ -126,13 +114,11 @@ def generate_manim_code():
                 + code
             )
 
-        # Save to session
         session["chat_history"].append({"role": "assistant", "content": code})
         session.modified = True
         return jsonify(
             {"success": True, "code": code, "chat_history": session["chat_history"]}
         )
-
     except Exception as e:
         print(f"Code generation failed: {str(e)}")
         return jsonify({"error": "Code generation failed"}), 500

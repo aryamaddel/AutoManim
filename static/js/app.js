@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Elements, state, and utility functions
   const els = {
     createButton: document.getElementById("create-button"),
     clearChatButton: document.getElementById("clear-chat-btn"),
@@ -35,15 +34,12 @@ document.addEventListener("DOMContentLoaded", () => {
       role === "user" ? "user" : "assistant"
     }-message p-2 mb-2`;
     messageDiv.textContent = message;
-
     const emptyState = els.chatContainer.querySelector(".text-center.py-4");
     if (emptyState) els.chatContainer.removeChild(emptyState);
-
     els.chatContainer.appendChild(messageDiv);
     els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
   };
 
-  // API functions
   const fetchChatHistory = async () => {
     try {
       const { chat_history } = await (await fetch("/get_chat_history")).json();
@@ -74,7 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Main function
   async function createAnimation() {
     const promptText = els.manimPrompt.value.trim();
     if (!promptText)
@@ -96,23 +91,20 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ manimPrompt: promptText }),
       });
-
       if (!genRes.ok) throw new Error();
       generatedCode = (await genRes.json()).code;
-
       addChatMessage("Generating your animation...", "assistant");
 
-      // Execute code and get results directly
+      // Execute code
       const execRes = await fetch("/execute_manim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: generatedCode }),
       });
-
       if (!execRes.ok) throw new Error();
       const result = await execRes.json();
 
-      // Update UI based on response
+      // Update UI
       if (result.status === "success") {
         if (result.video_url) {
           els.outputVideo.querySelector("source").src = `${
@@ -129,8 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
           false
         );
       }
-
-      toggleLoading(false);
     } catch (e) {
       console.error("Animation creation failed:", e);
       showStatus(
@@ -138,8 +128,8 @@ document.addEventListener("DOMContentLoaded", () => {
         "Animation creation failed. Please try again.",
         false
       );
-      toggleLoading(false);
     }
+    toggleLoading(false);
   }
 
   // Initialize
