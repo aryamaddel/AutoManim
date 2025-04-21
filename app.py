@@ -10,23 +10,6 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_key")
 manim_running, manim_result = False, None
 
 
-def find_video_file(static_folder, scene_name):
-    video_dir = os.path.join(static_folder, "media", "videos", "manim_code", "480p15")
-    if not os.path.exists(video_dir):
-        return None, "Video directory not found"
-
-    videos = [
-        f
-        for f in os.listdir(video_dir)
-        if f.startswith(scene_name) and f.endswith(".mp4")
-    ]
-    if not videos:
-        return None, "No video found for the scene"
-
-    latest = max(videos, key=lambda f: os.path.getmtime(os.path.join(video_dir, f)))
-    return f"/static/media/videos/manim_code/480p15/{latest}", None
-
-
 @app.route("/", methods=["GET", "POST"])
 def index():
     return render_template(
@@ -69,17 +52,37 @@ def execute_manim():
 
         stdout, stderr = process.communicate()
 
-        # Process result
         if process.returncode != 0:
             print(f"--- Manim Process Failed: {stderr} ---")
             manim_result = {"status": "error", "message": f"Process failed: {stderr}"}
         else:
-            video_url, error = find_video_file(app.static_folder, scene_name)
-            manim_result = (
-                {"status": "error", "message": error}
-                if error
-                else {"status": "success", "video_url": video_url}
+            video_dir = os.path.join(
+                app.static_folder, "media", "videos", "manim_code", "480p15"
             )
+            if not os.path.exists(video_dir):
+                manim_result = {
+                    "status": "error",
+                    "message": "Video directory not found",
+                }
+            else:
+                videos = [
+                    f
+                    for f in os.listdir(video_dir)
+                    if f.startswith(scene_name) and f.endswith(".mp4")
+                ]
+                if not videos:
+                    manim_result = {
+                        "status": "error",
+                        "message": "No video found for the scene",
+                    }
+                else:
+                    latest = max(
+                        videos,
+                        key=lambda f: os.path.getmtime(os.path.join(video_dir, f)),
+                    )
+                    video_url = f"/static/media/videos/manim_code/480p15/{latest}"
+                    manim_result = {"status": "success", "video_url": video_url}
+
             print(f"--- Manim Process: {manim_result['status']} ---")
 
         manim_running = False
@@ -123,7 +126,14 @@ def generate_manim_code():
         if not code:
             return jsonify({"error": f"All APIs failed: {', '.join(errs)}"}), 500
 
-        code = clean_generated_code(code)
+        code = re.sub(r"<think>.*?</think>", "", code, flags=re.DOTALL)
+        code = re.sub(r"^```python\s*|^```\s*|\s*```$", "", code).strip()
+        if "class MainScene" not in code:
+            code = (
+                "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
+                + code
+            )
+
         session["chat_history"].append({"role": "assistant", "content": code})
         session.modified = True
 
@@ -132,17 +142,6 @@ def generate_manim_code():
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-def clean_generated_code(code):
-    code = re.sub(r"<think>.*?</think>", "", code, flags=re.DOTALL)
-    code = re.sub(r"^```python\s*|^```\s*|\s*```$", "", code).strip()
-    if "class MainScene" not in code:
-        code = (
-            "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
-            + code
-        )
-    return code
 
 
 @app.route("/get_chat_history", methods=["GET"])
