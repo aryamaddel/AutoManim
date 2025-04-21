@@ -9,7 +9,6 @@ document.addEventListener("DOMContentLoaded", () => {
     statusContainer: document.getElementById("status-container"),
     manimPrompt: document.getElementById("manim-prompt"),
     createSpinner: document.getElementById("create-spinner"),
-    videoOverlay: document.getElementById("video-overlay"),
     chatContainer: document.getElementById("chat-container"),
   };
 
@@ -18,8 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const toggleLoading = (state) => {
     els.createSpinner.classList.toggle("d-none", !state);
-    els.videoOverlay.classList.toggle("d-none", !state);
-    els.videoOverlay.classList.toggle("d-flex", state);
     els.createButton.disabled = state;
   };
 
@@ -81,11 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const checkAnimationStatus = async () => {
     try {
       const data = await (await fetch("/check_manim_status")).json();
-      const processingStep = document.getElementById("processing-step");
 
       if (data.status === "success") {
-        if (processingStep)
-          processingStep.textContent = "Animation ready to view!";
         if (data.video_url) {
           els.outputVideo.querySelector("source").src = `${
             data.video_url
@@ -98,8 +92,6 @@ document.addEventListener("DOMContentLoaded", () => {
         clearInterval(statusCheckInterval);
         statusCheckInterval = null;
       } else if (data.status === "error") {
-        if (processingStep)
-          processingStep.textContent = "Failed. Please try again.";
         showStatus(
           "danger",
           "Animation creation failed. Please try again.",
@@ -108,8 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleLoading(false);
         clearInterval(statusCheckInterval);
         statusCheckInterval = null;
-      } else if (data.status === "processing" && processingStep) {
-        processingStep.textContent = "Rendering your animation...";
       }
     } catch (e) {
       console.error("Failed to check status:", e);
@@ -142,9 +132,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!genRes.ok) throw new Error();
       generatedCode = (await genRes.json()).code;
 
-      const processingStep = document.getElementById("processing-step");
-      if (processingStep)
-        processingStep.textContent = "Creating animation frames...";
       addChatMessage("Generating your animation...", "assistant");
 
       // Execute code
@@ -161,9 +148,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (statusCheckInterval) clearInterval(statusCheckInterval);
       statusCheckInterval = setInterval(checkAnimationStatus, 2000);
-
-      if (processingStep)
-        processingStep.textContent = "Rendering your animation...";
     } catch (e) {
       console.error("Animation creation failed:", e);
       showStatus(
@@ -172,9 +156,6 @@ document.addEventListener("DOMContentLoaded", () => {
         false
       );
       toggleLoading(false);
-      const processingStep = document.getElementById("processing-step");
-      if (processingStep)
-        processingStep.textContent = "Failed. Please try again.";
     }
   }
 
