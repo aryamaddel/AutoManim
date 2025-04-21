@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Elements, state, and utility functions
   const els = {
     createButton: document.getElementById("create-button"),
     clearChatButton: document.getElementById("clear-chat-btn"),
@@ -12,11 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
     chatContainer: document.getElementById("chat-container"),
   };
 
-  // State variables
-  let generatedCode = "";
-  let statusCheckInterval = null;
+  let generatedCode = "",
+    statusCheckInterval = null;
 
-  // UI utility functions
   const toggleLoading = (state) => {
     els.createSpinner.classList.toggle("d-none", !state);
     els.videoOverlay.classList.toggle("d-none", !state);
@@ -48,55 +47,45 @@ document.addEventListener("DOMContentLoaded", () => {
     els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
   };
 
-  // API interactions
+  // API functions
   const fetchChatHistory = async () => {
     try {
-      const response = await fetch("/get_chat_history");
-      const data = await response.json();
-
-      if (data.chat_history?.length > 0) {
+      const { chat_history } = await (await fetch("/get_chat_history")).json();
+      if (chat_history?.length) {
         els.chatContainer.innerHTML = "";
-        data.chat_history.forEach((message) => {
+        chat_history.forEach((msg) => {
           if (
-            message.role === "user" ||
-            (message.role === "assistant" &&
-              !message.content.includes("class MainScene"))
-          ) {
-            addChatMessage(message.content, message.role);
-          }
+            msg.role === "user" ||
+            (msg.role === "assistant" &&
+              !msg.content.includes("class MainScene"))
+          )
+            addChatMessage(msg.content, msg.role);
         });
       }
-    } catch (error) {
-      console.error("Failed to fetch chat history:", error);
+    } catch (e) {
+      console.error("Failed to fetch chat history:", e);
     }
   };
 
   const clearChatHistory = async () => {
     try {
-      const response = await fetch("/clear_chat_history", { method: "POST" });
-      if (response.ok) {
-        els.chatContainer.innerHTML = `
-          <div class="text-center py-4 opacity-50">
-            <p class="mb-0">Start a conversation with AutoManim</p>
-          </div>`;
+      if ((await fetch("/clear_chat_history", { method: "POST" })).ok) {
+        els.chatContainer.innerHTML = `<div class="text-center py-4 opacity-50"><p class="mb-0">Start a conversation with AutoManim</p></div>`;
         generatedCode = "";
       }
-    } catch (error) {
-      console.error("Failed to clear chat history:", error);
+    } catch (e) {
+      console.error("Failed to clear chat history:", e);
     }
   };
 
-  // Status polling
   const checkAnimationStatus = async () => {
     try {
-      const response = await fetch("/check_manim_status");
-      const data = await response.json();
+      const data = await (await fetch("/check_manim_status")).json();
       const processingStep = document.getElementById("processing-step");
 
       if (data.status === "success") {
         if (processingStep)
           processingStep.textContent = "Animation ready to view!";
-
         if (data.video_url) {
           els.outputVideo.querySelector("source").src = `${
             data.video_url
@@ -104,7 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
           els.outputVideo.load();
           els.outputVideo.play();
         }
-
         toggleLoading(false);
         showStatus("success", "Animation generated successfully!");
         clearInterval(statusCheckInterval);
@@ -112,7 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
       } else if (data.status === "error") {
         if (processingStep)
           processingStep.textContent = "Failed. Please try again.";
-
         showStatus(
           "danger",
           "Animation creation failed. Please try again.",
@@ -124,21 +111,20 @@ document.addEventListener("DOMContentLoaded", () => {
       } else if (data.status === "processing" && processingStep) {
         processingStep.textContent = "Rendering your animation...";
       }
-    } catch (error) {
-      console.error("Failed to check animation status:", error);
+    } catch (e) {
+      console.error("Failed to check status:", e);
     }
   };
 
-  // Main animation creation function
+  // Main function
   async function createAnimation() {
     const promptText = els.manimPrompt.value.trim();
-    if (!promptText) {
+    if (!promptText)
       return showStatus(
         "danger",
         "Please describe the animation you want to create",
         false
       );
-    }
 
     toggleLoading(true);
     showStatus("primary", "Processing your animation request...", false);
@@ -146,64 +132,60 @@ document.addEventListener("DOMContentLoaded", () => {
     els.manimPrompt.value = "";
 
     try {
-      // Generate the code
+      // Generate code
       const genRes = await fetch("/generate_manim_code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ manimPrompt: promptText }),
       });
 
-      if (!genRes.ok) throw new Error("Failed to generate animation code");
-      const genData = await genRes.json();
-      generatedCode = genData.code;
+      if (!genRes.ok) throw new Error();
+      generatedCode = (await genRes.json()).code;
 
       const processingStep = document.getElementById("processing-step");
       if (processingStep)
         processingStep.textContent = "Creating animation frames...";
-
       addChatMessage("Generating your animation...", "assistant");
 
-      // Execute the code
-      const execRes = await fetch("/execute_manim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: generatedCode }),
-      });
-
-      if (!execRes.ok) throw new Error("Failed to create animation");
+      // Execute code
+      if (
+        !(
+          await fetch("/execute_manim", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: generatedCode }),
+          })
+        ).ok
+      )
+        throw new Error();
 
       if (statusCheckInterval) clearInterval(statusCheckInterval);
       statusCheckInterval = setInterval(checkAnimationStatus, 2000);
 
       if (processingStep)
         processingStep.textContent = "Rendering your animation...";
-    } catch (error) {
-      console.error("Animation creation failed:", error);
+    } catch (e) {
+      console.error("Animation creation failed:", e);
       showStatus(
         "danger",
         "Animation creation failed. Please try again.",
         false
       );
       toggleLoading(false);
-
       const processingStep = document.getElementById("processing-step");
       if (processingStep)
         processingStep.textContent = "Failed. Please try again.";
     }
   }
 
-  // Setup and initialization
-  const init = () => {
-    fetchChatHistory();
-    els.createButton.addEventListener("click", createAnimation);
-    els.manimPrompt.addEventListener("keypress", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        createAnimation();
-      }
-    });
-    els.clearChatButton.addEventListener("click", clearChatHistory);
-  };
-
-  init();
+  // Initialize
+  fetchChatHistory();
+  els.createButton.addEventListener("click", createAnimation);
+  els.manimPrompt.addEventListener("keypress", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      createAnimation();
+    }
+  });
+  els.clearChatButton.addEventListener("click", clearChatHistory);
 });
