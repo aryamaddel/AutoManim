@@ -12,8 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chatContainer: document.getElementById("chat-container"),
   };
 
-  let generatedCode = "",
-    statusCheckInterval = null;
+  let generatedCode = "";
 
   const toggleLoading = (state) => {
     els.createSpinner.classList.toggle("d-none", !state);
@@ -75,37 +74,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const checkAnimationStatus = async () => {
-    try {
-      const data = await (await fetch("/check_manim_status")).json();
-
-      if (data.status === "success") {
-        if (data.video_url) {
-          els.outputVideo.querySelector("source").src = `${
-            data.video_url
-          }?t=${Date.now()}`;
-          els.outputVideo.load();
-          els.outputVideo.play();
-        }
-        toggleLoading(false);
-        showStatus("success", "Animation generated successfully!");
-        clearInterval(statusCheckInterval);
-        statusCheckInterval = null;
-      } else if (data.status === "error") {
-        showStatus(
-          "danger",
-          "Animation creation failed. Please try again.",
-          false
-        );
-        toggleLoading(false);
-        clearInterval(statusCheckInterval);
-        statusCheckInterval = null;
-      }
-    } catch (e) {
-      console.error("Failed to check status:", e);
-    }
-  };
-
   // Main function
   async function createAnimation() {
     const promptText = els.manimPrompt.value.trim();
@@ -134,20 +102,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
       addChatMessage("Generating your animation...", "assistant");
 
-      // Execute code
-      if (
-        !(
-          await fetch("/execute_manim", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code: generatedCode }),
-          })
-        ).ok
-      )
-        throw new Error();
+      // Execute code and get results directly
+      const execRes = await fetch("/execute_manim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: generatedCode }),
+      });
 
-      if (statusCheckInterval) clearInterval(statusCheckInterval);
-      statusCheckInterval = setInterval(checkAnimationStatus, 2000);
+      if (!execRes.ok) throw new Error();
+      const result = await execRes.json();
+
+      // Update UI based on response
+      if (result.status === "success") {
+        if (result.video_url) {
+          els.outputVideo.querySelector("source").src = `${
+            result.video_url
+          }?t=${Date.now()}`;
+          els.outputVideo.load();
+          els.outputVideo.play();
+        }
+        showStatus("success", "Animation generated successfully!");
+      } else {
+        showStatus(
+          "danger",
+          result.message || "Animation creation failed. Please try again.",
+          false
+        );
+      }
+
+      toggleLoading(false);
     } catch (e) {
       console.error("Animation creation failed:", e);
       showStatus(
