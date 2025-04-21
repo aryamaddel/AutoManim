@@ -16,6 +16,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Generated code storage - hidden from user but needed for execution
   let generatedCode = "";
+  // Status polling interval ID
+  let statusCheckInterval = null;
 
   // UI utility functions
   const toggleLoading = (state) => {
@@ -103,87 +105,61 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Simplified log monitoring - just for updating video status
-  let logEventSource = null;
-
-  const startLogStream = () => {
-    // Close any existing stream
-    if (logEventSource) {
-      logEventSource.close();
-    }
-
-    // Connect to SSE endpoint for essential updates only
-    logEventSource = new EventSource("/stream_logs");
-
-    logEventSource.onmessage = (event) => {
-      if (event.data === "HEARTBEAT") {
-        return; // Ignore heartbeats
-      }
-
-      if (event.data === "STREAM_END") {
-        if (logEventSource) {
-          logEventSource.close();
-          logEventSource = null;
-        }
-        return;
-      }
-
-      // Handle video ready event
-      if (event.data.startsWith("VIDEO_READY:")) {
-        const videoUrl = event.data.substring("VIDEO_READY:".length);
-        // Update video source and play
-        els.outputVideo.querySelector("source").src =
-          videoUrl + "?t=" + Date.now();
-        els.outputVideo.load();
-        els.outputVideo.play();
-
-        // Update processing message
-        if (els.videoOverlay) {
-          const processingStep = document.getElementById("processing-step");
+  // Simple polling to check animation status
+  const checkAnimationStatus = async () => {
+    try {
+      const response = await fetch("/check_manim_status");
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update processing step message
+        const processingStep = document.getElementById("processing-step");
+        
+        if (data.status === "success") {
           if (processingStep) {
             processingStep.textContent = "Animation ready to view!";
           }
+          
+          // Update video source and play
+          if (data.video_url) {
+            els.outputVideo.querySelector("source").src = data.video_url + "?t=" + Date.now();
+            els.outputVideo.load();
+            els.outputVideo.play();
+          }
+          
+          // Turn off loading state in UI
+          toggleLoading(false);
+          showStatus("success", "Animation generated successfully!");
+          
+          // Stop polling
+          clearInterval(statusCheckInterval);
+          statusCheckInterval = null;
+          
+        } else if (data.status === "error") {
+          if (processingStep) {
+            processingStep.textContent = "Failed. Please try again.";
+          }
+          
+          // Show error message
+          showStatus("danger", data.message || "Animation creation failed", false);
+          
+          // Turn off loading state in UI
+          toggleLoading(false);
+          
+          // Stop polling
+          clearInterval(statusCheckInterval);
+          statusCheckInterval = null;
+          
+        } else if (data.status === "processing") {
+          if (processingStep) {
+            processingStep.textContent = "Rendering your animation...";
+          }
+          // Continue polling - animation is still in progress
         }
-
-        // Turn off loading state in UI
-        toggleLoading(false);
-        showStatus("success", "Animation generated successfully!");
-
-        // End the stream
-        if (logEventSource) {
-          logEventSource.close();
-          logEventSource = null;
-        }
-        return;
       }
-
-      // Handle errors
-      if (event.data.startsWith("ERROR:")) {
-        const errorMessage = event.data.substring("ERROR:".length);
-        showStatus("danger", errorMessage.trim(), false);
-        toggleLoading(false);
-
-        // End the stream on error
-        if (logEventSource) {
-          logEventSource.close();
-          logEventSource = null;
-        }
-        return;
-      }
-
-      // Other log events are ignored in the UI (will show in terminal only)
-    };
-
-    logEventSource.onerror = () => {
-      console.error("Log stream error");
-      showStatus("danger", "Connection lost. Check server status.", false);
-      toggleLoading(false);
-
-      if (logEventSource) {
-        logEventSource.close();
-        logEventSource = null;
-      }
-    };
+    } catch (error) {
+      console.error("Failed to check animation status:", error);
+    }
   };
 
   // Combined function to generate and execute Manim animation
@@ -229,7 +205,6 @@ document.addEventListener("DOMContentLoaded", () => {
       addChatMessage("Generating your animation...", "assistant");
 
       // Now execute the code to create the animation
-      startLogStream();
       const execRes = await fetch("/execute_manim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -241,6 +216,12 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(execData.error || "Failed to create animation");
       }
 
+      // Start polling for status updates
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+      }
+      statusCheckInterval = setInterval(checkAnimationStatus, 2000); // Check every 2 seconds
+      
       // Update processing message
       if (els.videoOverlay) {
         const processingStep = document.getElementById("processing-step");
@@ -259,11 +240,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (processingStep) {
           processingStep.textContent = "Failed. Please try again.";
         }
-      }
-
-      if (logEventSource) {
-        logEventSource.close();
-        logEventSource = null;
       }
     }
   }

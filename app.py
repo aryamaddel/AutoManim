@@ -13,8 +13,8 @@ app.secret_key = os.environ.get(
     "FLASK_SECRET_KEY", "dev_secret_key"
 )  # Set a secret key for sessions
 
-# Queue for passing logs between threads
-log_queue = queue.Queue()
+# Queue for passing results between threads
+result_queue = queue.Queue()
 # Flag to indicate if the Manim process is running
 manim_running = False
 
@@ -71,70 +71,60 @@ def execute_manim():
         scene_name = scene_name_match.group(1)
 
         # Clear the queue and set running flag
-        while not log_queue.empty():
-            log_queue.get()
+        while not result_queue.empty():
+            result_queue.get()
         manim_running = True
 
         # Define the manim execution process inline
         def execute_manim_thread():
             global manim_running
-            error_detected = False
 
             try:
-                # Print terminal message to show we're starting
+                # Simple print statement for debugging
                 print("\n--- Starting Manim Animation Process ---")
 
-                # Start Manim process with redirected output to suppress logs
+                # Start Manim process
                 process = subprocess.Popen(
                     ["manim", "-ql", scene_path, scene_name],
                     cwd=app.static_folder,
-                    stdout=subprocess.DEVNULL,  # Redirect stdout to null
-                    stderr=subprocess.PIPE,  # Only capture stderr for errors
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                     text=True,
                 )
 
-                # Only process stderr for critical errors
-                if process.stderr:
-                    for line in process.stderr:
-                        if (
-                            "error" in line.lower()
-                            or "exception" in line.lower()
-                            or "traceback" in line.lower()
-                        ):
-                            print(f"Error detected: {line.strip()}")
-                            log_queue.put(f"ERROR:{line.strip()}")
-                            error_detected = True
+                # Simple print statement for debugging
+                print(f"--- Manim process started for scene: {scene_name} ---")
 
                 # Wait for process to complete
-                process.wait()
+                stdout, stderr = process.communicate()
 
-                # Check return code
+                # Check for errors
                 if process.returncode != 0:
-                    if not error_detected:
-                        log_queue.put(
-                            f"ERROR:Process failed with code {process.returncode}"
-                        )
-
+                    print(
+                        f"--- Manim Process Failed with code {process.returncode} ---"
+                    )
+                    print(f"Error output: {stderr}")
+                    result_queue.put(
+                        {"status": "error", "message": f"Process failed: {stderr}"}
+                    )
                     manim_running = False
-                    print("--- Manim Process Failed ---")
                     return
 
-                # Find the generated video only if no errors were detected
-                if not error_detected:
-                    video_url, error = find_video_file(app.static_folder, scene_name)
-                    if error:
-                        log_queue.put(f"ERROR:{error}")
-                        manim_running = False
-                        return
+                # Find the generated video
+                video_url, error = find_video_file(app.static_folder, scene_name)
+                if error:
+                    print(f"--- Video file error: {error} ---")
+                    result_queue.put({"status": "error", "message": error})
+                    manim_running = False
+                    return
 
-                    # Success - video is ready
-                    log_queue.put(f"VIDEO_READY:{video_url}")
-
-                print("--- Manim Process Completed Successfully ---")
+                # Success - video is ready
+                print(f"--- Manim Process Completed Successfully: {video_url} ---")
+                result_queue.put({"status": "success", "video_url": video_url})
 
             except Exception as e:
                 print(f"System error: [{e.__class__.__name__}] {str(e)}")
-                log_queue.put(f"ERROR:System error: {str(e)}")
+                result_queue.put({"status": "error", "message": str(e)})
             finally:
                 manim_running = False
 
@@ -148,26 +138,20 @@ def execute_manim():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/stream_logs", methods=["GET"])
-def stream_logs():
-    def generate():
-        last_log = None
-        while True:
-            try:
-                # Get new log or timeout after 0.5s
-                log = log_queue.get(timeout=0.5)
-                yield f"data: {log}\n\n"
-            except queue.Empty:
-                # Process completed check
-                if not manim_running and last_log != "STREAM_END":
-                    yield "data: STREAM_END\n\n"
-                    last_log = "STREAM_END"
-                    break
-                # Keep alive
-                yield "data: HEARTBEAT\n\n"
-            time.sleep(0.1)
+@app.route("/check_manim_status", methods=["GET"])
+def check_manim_status():
+    """Simple endpoint to check if animation is ready"""
+    try:
+        if not result_queue.empty():
+            result = result_queue.get()
+            return jsonify(result)
 
-    return Response(generate(), mimetype="text/event-stream")
+        if manim_running:
+            return jsonify({"status": "processing"})
+        else:
+            return jsonify({"status": "idle"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 
 @app.route("/generate_manim_code", methods=["POST"])
@@ -178,11 +162,9 @@ def generate_manim_code():
         if not animation_description:
             return jsonify({"error": "No animation description provided"}), 400
 
-        # Initialize chat history if it doesn't exist
         if "chat_history" not in session:
             session["chat_history"] = []
 
-        # Add user message to history
         session["chat_history"].append(
             {"role": "user", "content": animation_description}
         )
@@ -190,7 +172,6 @@ def generate_manim_code():
         code = None
         error_messages = []
 
-        # Try clients in sequence until one succeeds
         clients = [GeminiClient, GroqClient]
         code = None
         error_messages = []
@@ -201,7 +182,7 @@ def generate_manim_code():
                 code = client.generate_code(
                     animation_description, session["chat_history"]
                 )
-                break  # Stop if successful
+                break
             except Exception as e:
                 error_messages.append(f"{ClientClass.__name__} error: {str(e)}")
                 continue
