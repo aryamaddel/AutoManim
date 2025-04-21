@@ -27,5 +27,3 @@ class AICodeClient(ABC):
         6. Ensure animations work correctly with proper syntax
         7. Do not output ANY text that isn't part of the final code
         8. Consider the entire conversation history to maintain context"""
-
-# Empty init file to make directory a proper Python package
