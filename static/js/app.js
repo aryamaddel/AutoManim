@@ -34,7 +34,9 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const showStatus = (type, message, timeout = 3000) => {
-    els.statusContainer.className = `px-3 py-2 rounded bg-${type}-custom`;
+    els.statusContainer.className = `px-3 py-2 rounded border border-${
+      type === "primary" ? "secondary" : type
+    }`;
     els.statusText.className = `small mb-0`;
     els.statusText.textContent = message;
     els.statusMessage.classList.remove("d-none");
@@ -46,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const addChatMessage = (message, role) => {
     const messageDiv = document.createElement("div");
     messageDiv.className =
-      role === "user" ? "user-message p-3" : "assistant-message p-3";
+      role === "user" ? "user-message p-2 mb-2" : "assistant-message p-2 mb-2";
     messageDiv.textContent = message;
 
     // Remove the empty state if it exists
@@ -92,10 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (response.ok) {
         els.chatContainer.innerHTML = `
           <div class="text-center py-4 opacity-50">
-            <svg class="mb-2" width="32" height="32" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd" />
-            </svg>
-            <span class="text-secondary small">Start a conversation with AutoManim</span>
+            <p class="mb-0">Start a conversation with AutoManim</p>
           </div>
         `;
         generatedCode = "";
@@ -111,45 +110,48 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/check_manim_status");
       if (response.ok) {
         const data = await response.json();
-        
+
         // Update processing step message
         const processingStep = document.getElementById("processing-step");
-        
+
         if (data.status === "success") {
           if (processingStep) {
             processingStep.textContent = "Animation ready to view!";
           }
-          
+
           // Update video source and play
           if (data.video_url) {
-            els.outputVideo.querySelector("source").src = data.video_url + "?t=" + Date.now();
+            els.outputVideo.querySelector("source").src =
+              data.video_url + "?t=" + Date.now();
             els.outputVideo.load();
             els.outputVideo.play();
           }
-          
+
           // Turn off loading state in UI
           toggleLoading(false);
           showStatus("success", "Animation generated successfully!");
-          
+
           // Stop polling
           clearInterval(statusCheckInterval);
           statusCheckInterval = null;
-          
         } else if (data.status === "error") {
           if (processingStep) {
             processingStep.textContent = "Failed. Please try again.";
           }
-          
+
           // Show error message
-          showStatus("danger", data.message || "Animation creation failed", false);
-          
+          showStatus(
+            "danger",
+            data.message || "Animation creation failed",
+            false
+          );
+
           // Turn off loading state in UI
           toggleLoading(false);
-          
+
           // Stop polling
           clearInterval(statusCheckInterval);
           statusCheckInterval = null;
-          
         } else if (data.status === "processing") {
           if (processingStep) {
             processingStep.textContent = "Rendering your animation...";
@@ -201,7 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
           processingStep.textContent = "Creating animation frames...";
         }
       }
-      
+
       addChatMessage("Generating your animation...", "assistant");
 
       // Now execute the code to create the animation
@@ -221,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
         clearInterval(statusCheckInterval);
       }
       statusCheckInterval = setInterval(checkAnimationStatus, 2000); // Check every 2 seconds
-      
+
       // Update processing message
       if (els.videoOverlay) {
         const processingStep = document.getElementById("processing-step");
@@ -233,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Animation creation failed:", error);
       showStatus("danger", error.message || "Animation creation failed", false);
       toggleLoading(false);
-      
+
       // Update processing message on error
       if (els.videoOverlay) {
         const processingStep = document.getElementById("processing-step");
