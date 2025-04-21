@@ -54,7 +54,11 @@ def execute_manim():
 
         if process.returncode != 0:
             print(f"--- Manim Process Failed: {stderr} ---")
-            manim_result = {"status": "error", "message": f"Process failed: {stderr}"}
+            # Only show a generic error message to the user
+            manim_result = {
+                "status": "error",
+                "message": "Animation creation failed. Please try again.",
+            }
         else:
             video_dir = os.path.join(
                 app.static_folder, "media", "videos", "manim_code", "480p15"
@@ -62,7 +66,7 @@ def execute_manim():
             if not os.path.exists(video_dir):
                 manim_result = {
                     "status": "error",
-                    "message": "Video directory not found",
+                    "message": "Animation creation failed. Please try again.",
                 }
             else:
                 videos = [
