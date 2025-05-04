@@ -1,4 +1,4 @@
-import re, os, subprocess
+import re, os, subprocess, logging
 from flask import Flask, render_template, request, jsonify, session
 from utils.gemini_client import GeminiClient
 from utils.groq_client import GroqClient
@@ -6,6 +6,12 @@ from utils.groq_client import GroqClient
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_key")
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -89,39 +95,61 @@ def generate_manim_code():
     try:
         desc = request.json.get("manimPrompt")
         if not desc:
+            logger.error("No animation description provided in request")
             return jsonify({"error": "No animation description provided"}), 400
 
         if "chat_history" not in session:
             session["chat_history"] = []
         session["chat_history"].append({"role": "user", "content": desc})
 
-        code, errors = None, []
+        response, errors = None, []
         for Client in [GeminiClient, GroqClient]:
             try:
-                code = Client().generate_code(desc, session["chat_history"])
+                logger.info(f"Attempting to generate code with {Client.__name__}")
+                response = Client().generate_code(desc, session["chat_history"])
+                logger.info(f"Successfully generated response with {Client.__name__}")
+                logger.debug(f"Raw response: {response[:100]}...")  # Log first 100 chars
                 break
             except Exception as e:
-                errors.append(f"{Client.__name__} error: {str(e)}")
+                error_msg = f"{Client.__name__} error: {str(e)}"
+                logger.error(error_msg)
+                errors.append(error_msg)
 
-        if not code:
-            return jsonify({"error": "All AI APIs failed"}), 500
-
-        code = re.sub(r"<think>.*?</think>", "", code, flags=re.DOTALL)
-        code = re.sub(r"^```python\s*|^```\s*|\s*```$", "", code).strip()
-        if "class MainScene" not in code:
+        if not response:
+            logger.error(f"All AI APIs failed: {errors}")
+            return jsonify({"error": "All AI APIs failed", "details": errors}), 500
+            
+        # Extract code from <manim> tags - strict enforcement
+        logger.info("Extracting code from <manim> tags")
+        code_match = re.search(r"<manim>(.*?)</manim>", response, re.DOTALL)
+            
+        if not code_match:
+            logger.error(f"No <manim> tags found in response. Response preview: {response[:200]}...")
+            return jsonify({
+                "error": "No code found in <manim> tags. The AI response did not follow the required format.",
+                "response_preview": response[:200]
+            }), 400
+            
+        code = code_match.group(1).strip()
+        logger.info(f"Successfully extracted code, length: {len(code)} characters")
+        
+        # Ensure we have a MainScene class
+        if code and "class MainScene" not in code:
+            logger.info("Adding MainScene class wrapper to code")
             code = (
                 "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
                 + code
             )
 
-        session["chat_history"].append({"role": "assistant", "content": code})
+        session["chat_history"].append({"role": "assistant", "content": response})
         session.modified = True
         return jsonify(
             {"success": True, "code": code, "chat_history": session["chat_history"]}
         )
     except Exception as e:
-        print(f"Code generation failed: {str(e)}")
-        return jsonify({"error": "Code generation failed"}), 500
+        error_msg = f"Code generation failed: {str(e)}"
+        logger.exception(error_msg)
+        return jsonify({"error": error_msg}), 500
 
 
 @app.route("/get_chat_history", methods=["GET"])
