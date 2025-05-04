@@ -8,10 +8,10 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_key")
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -21,12 +21,79 @@ def index():
     )
 
 
-@app.route("/execute_manim", methods=["POST"])
-def execute_manim():
+@app.route("/generate_and_execute_manim", methods=["POST"])
+def generate_and_execute_manim():
     try:
-        manim_code = request.json.get("code")
+        desc = request.json.get("manimPrompt")
+        if not desc:
+            logger.error("No animation description provided in request")
+            return jsonify({"error": "No animation description provided"}), 400
+
+        # Update chat history
+        if "chat_history" not in session:
+            session["chat_history"] = []
+        session["chat_history"].append({"role": "user", "content": desc})
+
+        # Generate Manim code using AI
+        logger.info("Generating Manim code")
+        response, errors = None, []
+        for Client in [GeminiClient, GroqClient]:
+            try:
+                logger.info(f"Attempting to generate code with {Client.__name__}")
+                response = Client().generate_code(desc, session["chat_history"])
+                logger.info(f"Successfully generated response with {Client.__name__}")
+                logger.debug(
+                    f"Raw response: {response[:100]}..."
+                )  # Log first 100 chars
+                break
+            except Exception as e:
+                error_msg = f"{Client.__name__} error: {str(e)}"
+                logger.error(error_msg)
+                errors.append(error_msg)
+
+        if not response:
+            logger.error(f"All AI APIs failed: {errors}")
+            return jsonify({"error": "All AI APIs failed", "details": errors}), 500
+
+        # Extract code from <manim> tags
+        logger.info("Extracting code from <manim> tags")
+        code_match = re.search(r"<manim>(.*?)</manim>", response, re.DOTALL)
+
+        if not code_match:
+            logger.error(
+                f"No <manim> tags found in response. Response preview: {response[:200]}..."
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "No code found in <manim> tags. The AI response did not follow the required format.",
+                        "response_preview": response[:200],
+                    }
+                ),
+                400,
+            )
+
+        manim_code = code_match.group(1).strip()
+        logger.info(
+            f"Successfully extracted code, length: {len(manim_code)} characters"
+        )
+
+        # Ensure we have a MainScene class
+        if manim_code and "class MainScene" not in manim_code:
+            logger.info("Adding MainScene class wrapper to code")
+            manim_code = (
+                "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
+                + manim_code
+            )
+
+        # Update chat history
+        session["chat_history"].append({"role": "assistant", "content": response})
+        session.modified = True
+
+        # Now execute the generated code
+        logger.info("Executing Manim code")
         if not manim_code:
-            return jsonify({"error": "No code provided"}), 400
+            return jsonify({"error": "No code generated"}), 400
 
         scene_path = os.path.join(app.static_folder, "manim_code.py")
         os.makedirs(app.static_folder, exist_ok=True)
@@ -38,7 +105,7 @@ def execute_manim():
             return jsonify({"error": "Could not find scene class in the code"}), 400
         scene_name = scene_name_match.group(1)
 
-        print(f"--- Starting Manim: {scene_name} ---")
+        logger.info(f"Starting Manim: {scene_name}")
         process = subprocess.Popen(
             ["manim", "-ql", scene_path, scene_name],
             cwd=app.static_folder,
@@ -49,11 +116,13 @@ def execute_manim():
         _, stderr = process.communicate()
 
         if process.returncode != 0:
-            print(f"--- Manim Failed: {stderr} ---")
+            logger.error(f"Manim Failed: {stderr}")
             return jsonify(
                 {
                     "status": "error",
                     "message": "Animation creation failed. Please try again.",
+                    "code": manim_code,
+                    "chat_history": session["chat_history"],
                 }
             )
 
@@ -65,6 +134,8 @@ def execute_manim():
                 {
                     "status": "error",
                     "message": "Animation creation failed. Please try again.",
+                    "code": manim_code,
+                    "chat_history": session["chat_history"],
                 }
             )
 
@@ -75,81 +146,30 @@ def execute_manim():
         ]
         if not videos:
             return jsonify(
-                {"status": "error", "message": "No video found for the scene"}
+                {
+                    "status": "error",
+                    "message": "No video found for the scene",
+                    "code": manim_code,
+                    "chat_history": session["chat_history"],
+                }
             )
 
         latest = max(videos, key=lambda f: os.path.getmtime(os.path.join(video_dir, f)))
+
+        # Return success response with all data
         return jsonify(
             {
                 "status": "success",
                 "video_url": f"/static/media/videos/manim_code/480p15/{latest}",
+                "code": manim_code,
+                "chat_history": session["chat_history"],
             }
         )
+
     except Exception as e:
-        print(f"Exception: {str(e)}")
-        return jsonify({"status": "error", "message": "Animation creation failed"}), 500
-
-
-@app.route("/generate_manim_code", methods=["POST"])
-def generate_manim_code():
-    try:
-        desc = request.json.get("manimPrompt")
-        if not desc:
-            logger.error("No animation description provided in request")
-            return jsonify({"error": "No animation description provided"}), 400
-
-        if "chat_history" not in session:
-            session["chat_history"] = []
-        session["chat_history"].append({"role": "user", "content": desc})
-
-        response, errors = None, []
-        for Client in [GeminiClient, GroqClient]:
-            try:
-                logger.info(f"Attempting to generate code with {Client.__name__}")
-                response = Client().generate_code(desc, session["chat_history"])
-                logger.info(f"Successfully generated response with {Client.__name__}")
-                logger.debug(f"Raw response: {response[:100]}...")  # Log first 100 chars
-                break
-            except Exception as e:
-                error_msg = f"{Client.__name__} error: {str(e)}"
-                logger.error(error_msg)
-                errors.append(error_msg)
-
-        if not response:
-            logger.error(f"All AI APIs failed: {errors}")
-            return jsonify({"error": "All AI APIs failed", "details": errors}), 500
-            
-        # Extract code from <manim> tags - strict enforcement
-        logger.info("Extracting code from <manim> tags")
-        code_match = re.search(r"<manim>(.*?)</manim>", response, re.DOTALL)
-            
-        if not code_match:
-            logger.error(f"No <manim> tags found in response. Response preview: {response[:200]}...")
-            return jsonify({
-                "error": "No code found in <manim> tags. The AI response did not follow the required format.",
-                "response_preview": response[:200]
-            }), 400
-            
-        code = code_match.group(1).strip()
-        logger.info(f"Successfully extracted code, length: {len(code)} characters")
-        
-        # Ensure we have a MainScene class
-        if code and "class MainScene" not in code:
-            logger.info("Adding MainScene class wrapper to code")
-            code = (
-                "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
-                + code
-            )
-
-        session["chat_history"].append({"role": "assistant", "content": response})
-        session.modified = True
-        return jsonify(
-            {"success": True, "code": code, "chat_history": session["chat_history"]}
-        )
-    except Exception as e:
-        error_msg = f"Code generation failed: {str(e)}"
+        error_msg = f"Animation processing failed: {str(e)}"
         logger.exception(error_msg)
-        return jsonify({"error": error_msg}), 500
+        return jsonify({"status": "error", "message": error_msg}), 500
 
 
 @app.route("/get_chat_history", methods=["GET"])

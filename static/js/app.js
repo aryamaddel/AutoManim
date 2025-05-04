@@ -11,8 +11,6 @@ document.addEventListener("DOMContentLoaded", () => {
     chatContainer: document.getElementById("chat-container"),
   };
 
-  let generatedCode = "";
-
   const toggleLoading = (state) => {
     els.createSpinner.classList.toggle("d-none", !state);
     els.createButton.disabled = state;
@@ -63,7 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       if ((await fetch("/clear_chat_history", { method: "POST" })).ok) {
         els.chatContainer.innerHTML = `<div class="text-center py-4 opacity-50"><p class="mb-0">Start a conversation with AutoManim</p></div>`;
-        generatedCode = "";
       }
     } catch (e) {
       console.error("Failed to clear chat history:", e);
@@ -85,27 +82,20 @@ document.addEventListener("DOMContentLoaded", () => {
     els.manimPrompt.value = "";
 
     try {
-      // Generate code
-      const genRes = await fetch("/generate_manim_code", {
+      // Generate and execute in one step
+      const response = await fetch("/generate_and_execute_manim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ manimPrompt: promptText }),
       });
-      if (!genRes.ok) throw new Error();
-      generatedCode = (await genRes.json()).code;
-      addChatMessage("Generating your animation...", "assistant");
 
-      // Execute code
-      const execRes = await fetch("/execute_manim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: generatedCode }),
-      });
-      if (!execRes.ok) throw new Error();
-      const result = await execRes.json();
+      if (!response.ok) throw new Error("Request failed");
+      const result = await response.json();
 
-      // Update UI
+      // Update UI based on result
       if (result.status === "success") {
+        addChatMessage("Animation created successfully!", "assistant");
+
         if (result.video_url) {
           els.outputVideo.querySelector("source").src = `${
             result.video_url
@@ -115,6 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         showStatus("success", "Animation generated successfully!");
       } else {
+        addChatMessage("Sorry, I couldn't create that animation.", "assistant");
         showStatus(
           "danger",
           result.message || "Animation creation failed. Please try again.",
@@ -123,6 +114,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (e) {
       console.error("Animation creation failed:", e);
+      addChatMessage(
+        "Sorry, an error occurred while creating your animation.",
+        "assistant"
+      );
       showStatus(
         "danger",
         "Animation creation failed. Please try again.",
