@@ -15,7 +15,7 @@ class GeminiClient(AICodeClient):
         system_instruction = self.get_system_instruction()
         
         generate_content_config = types.GenerateContentConfig(
-            system_instruction=system_instruction,
+                 system_instruction=system_instruction, temperature=0
         )
 
         contents = []
