@@ -6,7 +6,6 @@ from utils.groq_client import GroqClient
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_key")
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
@@ -29,33 +28,24 @@ def generate_and_execute_manim():
             logger.error("No animation description provided in request")
             return jsonify({"error": "No animation description provided"}), 400
 
-        # Update chat history
-        if "chat_history" not in session:
-            session["chat_history"] = []
-        session["chat_history"].append({"role": "user", "content": desc})
+        session.setdefault("chat_history", []).append({"role": "user", "content": desc})
 
-        # Generate Manim code using AI
         logger.info("Generating Manim code")
         response, errors = None, []
+
         for Client in [GeminiClient, GroqClient]:
             try:
-                logger.info(f"Attempting to generate code with {Client.__name__}")
                 response = Client().generate_code(desc, session["chat_history"])
-                logger.info(f"Successfully generated response with {Client.__name__}")
-                logger.debug(
-                    f"Raw response: {response[:100]}..."
-                )  # Log first 100 chars
+                logger.info(f"Generated code with {Client.__name__}")
                 break
             except Exception as e:
-                error_msg = f"{Client.__name__} error: {str(e)}"
-                logger.error(error_msg)
-                errors.append(error_msg)
+                errors.append(f"{Client.__name__}: {str(e)}")
+                logger.error(f"{Client.__name__} error: {str(e)}")
 
         if not response:
             logger.error(f"All AI APIs failed: {errors}")
             return jsonify({"error": "All AI APIs failed", "details": errors}), 500
 
-        # Extract code from <manim> tags
         logger.info("Extracting code from <manim> tags")
         code_match = re.search(r"<manim>(.*?)</manim>", response, re.DOTALL)
 
@@ -78,19 +68,9 @@ def generate_and_execute_manim():
             f"Successfully extracted code, length: {len(manim_code)} characters"
         )
 
-        # Ensure we have a MainScene class
-        if manim_code and "class MainScene" not in manim_code:
-            logger.info("Adding MainScene class wrapper to code")
-            manim_code = (
-                "from manim import *\n\nclass MainScene(Scene):\n    def construct(self):\n        "
-                + manim_code
-            )
-
-        # Update chat history
         session["chat_history"].append({"role": "assistant", "content": response})
         session.modified = True
 
-        # Now execute the generated code
         logger.info("Executing Manim code")
         if not manim_code:
             return jsonify({"error": "No code generated"}), 400
@@ -144,19 +124,10 @@ def generate_and_execute_manim():
             for f in os.listdir(video_dir)
             if f.startswith(scene_name) and f.endswith(".mp4")
         ]
-        if not videos:
-            return jsonify(
-                {
-                    "status": "error",
-                    "message": "No video found for the scene",
-                    "code": manim_code,
-                    "chat_history": session["chat_history"],
-                }
-            )
 
+        # Find latest video file by modification time
         latest = max(videos, key=lambda f: os.path.getmtime(os.path.join(video_dir, f)))
 
-        # Return success response with all data
         return jsonify(
             {
                 "status": "success",
@@ -167,16 +138,18 @@ def generate_and_execute_manim():
         )
 
     except Exception as e:
-        error_msg = f"Animation processing failed: {str(e)}"
-        logger.exception(error_msg)
-        return jsonify({"status": "error", "message": error_msg}), 500
+        logger.exception(f"Animation processing failed: {str(e)}")
+        return (
+            jsonify(
+                {"status": "error", "message": f"Animation processing failed: {str(e)}"}
+            ),
+            500,
+        )
 
 
 @app.route("/get_chat_history", methods=["GET"])
 def get_chat_history():
-    if "chat_history" not in session:
-        session["chat_history"] = []
-    return jsonify({"chat_history": session["chat_history"]})
+    return jsonify({"chat_history": session.setdefault("chat_history", [])})
 
 
 @app.route("/clear_chat_history", methods=["POST"])
