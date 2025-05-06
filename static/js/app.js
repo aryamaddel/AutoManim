@@ -82,7 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
     els.manimPrompt.value = "";
 
     try {
-      // Generate and execute in one step
       const response = await fetch("/generate_and_execute_manim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -92,7 +91,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!response.ok) throw new Error("Request failed");
       const result = await response.json();
 
-      // Update UI based on result
       if (result.status === "success") {
         addChatMessage("Animation created successfully!", "assistant");
 
@@ -127,7 +125,6 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleLoading(false);
   }
 
-  // Initialize
   fetchChatHistory();
   els.createButton.addEventListener("click", createAnimation);
   els.manimPrompt.addEventListener("keypress", (e) => {

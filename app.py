@@ -1,7 +1,6 @@
 import re, os, subprocess, logging
 from flask import Flask, render_template, request, jsonify, session
-from utils.gemini_client import GeminiClient
-from utils.groq_client import GroqClient
+from utils.ai_clients import GeminiClient, GroqClient
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_key")
@@ -125,7 +124,6 @@ def generate_and_execute_manim():
             if f.startswith(scene_name) and f.endswith(".mp4")
         ]
 
-        # Find latest video file by modification time
         latest = max(videos, key=lambda f: os.path.getmtime(os.path.join(video_dir, f)))
 
         return jsonify(
