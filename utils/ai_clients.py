@@ -20,22 +20,7 @@ class AICodeClient(ABC):
 
     def get_system_instruction(self):
         return """You are a Manim code generator that helps users create mathematical animations.
-        CRITICAL INSTRUCTIONS - MUST BE FOLLOWED:
-        1. You MUST place ALL executable Python code ONLY between <manim> and </manim> tags.
-           Example format: 
-           <manim>
-           from manim import *
-           
-           class MainScene(Scene):
-               def construct(self):
-                   # Your code here
-           </manim>
-           
-        2. Include all necessary imports inside the <manim> tags
-        3. Create a Scene class named 'MainScene' with proper construct method
-        4. You may provide explanations or context outside the <manim> tags
-        5. DO NOT use markdown code blocks (```) for code - ONLY use <manim> tags
-        6. This requirement is critical - the system can ONLY process code inside <manim> tags
+        You MUST place ALL executable Python code ONLY between <manim> and </manim> tags NOT in ```.
         """
 
 
