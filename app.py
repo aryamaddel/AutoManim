@@ -23,9 +23,6 @@ def index():
 def generate_and_execute_manim():
     try:
         desc = request.json.get("manimPrompt")
-        if not desc:
-            logger.error("No animation description provided in request")
-            return jsonify({"error": "No animation description provided"}), 400
 
         session.setdefault("chat_history", []).append({"role": "user", "content": desc})
 
