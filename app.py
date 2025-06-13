@@ -3,7 +3,6 @@ import os
 import subprocess
 import logging
 import requests
-from abc import ABC, abstractmethod
 from flask import Flask, render_template, request, jsonify, session
 from google import genai
 from google.genai import types
@@ -17,30 +16,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class AICodeClient(ABC):
-    """Base abstract class for AI Code Generation clients"""
-
-    def __init__(self, api_key_name):
-        self.api_key = os.environ.get(api_key_name)
+class GroqClient:
+    def __init__(self):
+        self.api_key = os.environ.get("GROQ_API_KEY")
         if not self.api_key:
-            raise ValueError(f"{api_key_name} environment variable not set")
-
-    @abstractmethod
-    def generate_code(self, prompt, chat_history=None):
-        """Generate code from prompt with optional chat history"""
-        pass
+            raise ValueError("GROQ_API_KEY environment variable not set")
+        self.api_url = "https://api.groq.com/v1/chat/completions"
+        self.model = "llama3-70b-8192"  # Default model
 
     def get_system_instruction(self):
         return """You are a Manim code generator that helps users create mathematical animations.
         You MUST place ALL executable Python code ONLY between <manim> and </manim> tags NOT in ```.
         """
-
-
-class GroqClient(AICodeClient):
-    def __init__(self):
-        super().__init__("GROQ_API_KEY")
-        self.api_url = "https://api.groq.com/v1/chat/completions"
-        self.model = "llama3-70b-8192"  # Default model
 
     def generate_code(self, prompt, chat_history=None):
         system_instruction = self.get_system_instruction()
@@ -71,11 +58,18 @@ class GroqClient(AICodeClient):
         return code
 
 
-class GeminiClient(AICodeClient):
+class GeminiClient:
     def __init__(self):
-        super().__init__("GEMINI_API_KEY")
+        self.api_key = os.environ.get("GEMINI_API_KEY")
+        if not self.api_key:
+            raise ValueError("GEMINI_API_KEY environment variable not set")
         self.client = genai.Client(api_key=self.api_key)
         self.model = "gemini-2.0-flash"
+
+    def get_system_instruction(self):
+        return """You are a Manim code generator that helps users create mathematical animations.
+        You MUST place ALL executable Python code ONLY between <manim> and </manim> tags NOT in ```.
+        """
 
     def generate_code(self, prompt, chat_history=None):
         system_instruction = self.get_system_instruction()
