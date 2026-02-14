@@ -1,254 +1,123 @@
-import re
 import os
+import sys
 import subprocess
-import logging
-import requests
-from flask import Flask, render_template, request, jsonify, session
-from google import genai
-from google.genai import types
+from pathlib import Path
+from dotenv import load_dotenv
+from openai import OpenAI
 
-app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_key")
+# Load environment variables
+load_dotenv()
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+# Initialize API client
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY"),
 )
-logger = logging.getLogger(__name__)
 
 
-class GroqClient:
-    def __init__(self):
-        self.api_key = os.environ.get("GROQ_API_KEY")
-        if not self.api_key:
-            raise ValueError("GROQ_API_KEY environment variable not set")
-        self.api_url = "https://api.groq.com/v1/chat/completions"
-        self.model = "llama3-70b-8192"  # Default model
-
-    def get_system_instruction(self):
-        return """You are a Manim code generator that helps users create mathematical animations.
-        You MUST place ALL executable Python code ONLY between <manim> and </manim> tags NOT in ```.
-        """
-
-    def generate_code(self, prompt, chat_history=None):
-        system_instruction = self.get_system_instruction()
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-
-        messages = [{"role": "system", "content": system_instruction}]
-
-        if chat_history:
-            past_history = [msg for msg in chat_history if msg["content"] != prompt]
-            messages.extend(past_history)
-
-        messages.append({"role": "user", "content": prompt})
-
-        payload = {"model": self.model, "messages": messages}
-
-        response = requests.post(self.api_url, headers=headers, json=payload)
-        response.raise_for_status()
-
-        response_json = response.json()
-        code = response_json["choices"][0]["message"]["content"]
-
-        if not code:
-            raise ValueError("Empty response from Groq API")
-
-        return code
-
-
-class GeminiClient:
-    def __init__(self):
-        self.api_key = os.environ.get("GEMINI_API_KEY")
-        if not self.api_key:
-            raise ValueError("GEMINI_API_KEY environment variable not set")
-        self.client = genai.Client(api_key=self.api_key)
-        self.model = "gemini-2.0-flash"
-
-    def get_system_instruction(self):
-        return """You are a Manim code generator that helps users create mathematical animations.
-        You MUST place ALL executable Python code ONLY between <manim> and </manim> tags NOT in ```.
-        """
-
-    def generate_code(self, prompt, chat_history=None):
-        system_instruction = self.get_system_instruction()
-
-        generate_content_config = types.GenerateContentConfig(
-            system_instruction=system_instruction, temperature=0
-        )
-
-        contents = []
-
-        if chat_history:
-            past_history = [msg for msg in chat_history if msg["content"] != prompt]
-
-            for message in past_history:
-                role = "user" if message["role"] == "user" else "model"
-                contents.append(
-                    types.Content(
-                        role=role,
-                        parts=[types.Part.from_text(text=message["content"])],
-                    )
-                )
-
-        contents.append(
-            types.Content(
-                role="user",
-                parts=[types.Part.from_text(text=prompt)],
-            ),
-        )
-
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=contents,
-            config=generate_content_config,
-        )
-
-        if not hasattr(response, "text") or response.text is None:
-            raise ValueError("Empty response from Gemini API")
-
-        return response.text
-
-
-@app.route("/", methods=["GET", "POST"])
-def index():
-    return render_template(
-        "index.html",
-        user_input=request.form.get("text") if request.method == "POST" else None,
+def generate_manim_code(prompt: str) -> str:
+    """Generate Manim code using OpenRouter with streaming output."""
+    system_prompt = (
+        "You are an expert Manim developer. "
+        "Write a complete, runnable Manim script for the requested animation. "
+        "The script must define a Scene class named 'GenScene'. "
+        "Use ONLY standard Manim Community Edition (v0.18+) classes and methods. "
+        "Example valid code structure:\n"
+        "from manim import *\n"
+        "class GenScene(Scene):\n"
+        "    def construct(self):\n"
+        "        # Your animation code here\n"
+        "        c = Circle(color=RED)\n"
+        "        c.move_to(RIGHT * 2)\n"
+        "        self.play(Create(c))\n"
+        "STRICT RULES:\n"
+        "1. Use `obj.move_to(point)` NOT `obj.position(point)`\n"
+        "2. Use `obj.set_color(color)` NOT `obj.color(color)`\n"
+        "3. Do NOT use fake methods like `plot_point`, `shape`, or `note`.\n"
+        "4. Always use `self.play()` to animate.\n"
+        "5. Use `Text('content')` for text, not `Label`.\n"
+        "Output ONLY the python code, no markdown block or explanations. "
+        "Do not use ```python``` or ``````."
     )
 
-
-@app.route("/generate_and_execute_manim", methods=["POST"])
-def generate_and_execute_manim():
     try:
-        desc = request.json.get("manimPrompt")
-
-        session.setdefault("chat_history", []).append({"role": "user", "content": desc})
-
-        logger.info("Generating Manim code")
-        response, errors = None, []
-
-        for Client in [GeminiClient, GroqClient]:
-            try:
-                response = Client().generate_code(desc, session["chat_history"])
-                logger.info(f"Generated code with {Client.__name__}")
-                break
-            except Exception as e:
-                errors.append(f"{Client.__name__}: {str(e)}")
-                logger.error(f"{Client.__name__} error: {str(e)}")
-
-        if not response:
-            logger.error(f"All AI APIs failed: {errors}")
-            return jsonify({"error": "All AI APIs failed", "details": errors}), 500
-
-        logger.info("Extracting code from <manim> tags")
-        code_match = re.search(r"<manim>(.*?)</manim>", response, re.DOTALL)
-
-        if not code_match:
-            logger.error(
-                f"No <manim> tags found in response. Response preview: {response[:200]}..."
-            )
-            return (
-                jsonify(
-                    {
-                        "error": "No code found in <manim> tags. The AI response did not follow the required format.",
-                        "response_preview": response[:200],
-                    }
-                ),
-                400,
-            )
-
-        manim_code = code_match.group(1).strip()
-        logger.info(
-            f"Successfully extracted code, length: {len(manim_code)} characters"
+        response_stream = client.chat.completions.create(
+            model="openrouter/free",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ],
+            stream=True,
         )
 
-        session["chat_history"].append({"role": "assistant", "content": response})
-        session.modified = True
+        full_code = ""
+        actual_model = "unknown"
+        print("\nRequest sent to openrouter/free...")
 
-        logger.info("Executing Manim code")
-        if not manim_code:
-            return jsonify({"error": "No code generated"}), 400
+        first_chunk = True
 
-        scene_path = os.path.join(app.static_folder, "manim_code.py")
-        os.makedirs(app.static_folder, exist_ok=True)
-        with open(scene_path, "w") as f:
-            f.write(manim_code)
+        for chunk in response_stream:
+            if first_chunk:
+                actual_model = getattr(chunk, "model", "unknown")
+                print(f"Model responding: {actual_model}\n\nGenerating code:\n")
+                first_chunk = False
 
-        scene_name_match = re.search(r"class\s+(\w+)\((.*?)Scene\):", manim_code)
-        if not scene_name_match:
-            return jsonify({"error": "Could not find scene class in the code"}), 400
-        scene_name = scene_name_match.group(1)
+            content = chunk.choices[0].delta.content or ""
+            print(content, end="", flush=True)
+            full_code += content
 
-        logger.info(f"Starting Manim: {scene_name}")
-        process = subprocess.Popen(
-            ["manim", "-ql", scene_path, scene_name],
-            cwd=app.static_folder,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        _, stderr = process.communicate()
+        print("\n\nDone.\n")
 
-        if process.returncode != 0:
-            logger.error(f"Manim Failed: {stderr}")
-            return jsonify(
-                {
-                    "status": "error",
-                    "message": "Animation creation failed. Please try again.",
-                    "code": manim_code,
-                    "chat_history": session["chat_history"],
-                }
-            )
+        # Clean up any potential markdown formatting if model ignored instructions
+        clean_code = full_code.strip()
+        if clean_code.startswith("```python"):
+            clean_code = clean_code.replace("```python", "", 1)
+        if clean_code.startswith("```"):
+            clean_code = clean_code.replace("```", "", 1)
+        if clean_code.endswith("```"):
+            clean_code = clean_code[:-3]
 
-        video_dir = os.path.join(
-            app.static_folder, "media", "videos", "manim_code", "480p15"
-        )
-        if not os.path.exists(video_dir):
-            return jsonify(
-                {
-                    "status": "error",
-                    "message": "Animation creation failed. Please try again.",
-                    "code": manim_code,
-                    "chat_history": session["chat_history"],
-                }
-            )
-
-        videos = [
-            f
-            for f in os.listdir(video_dir)
-            if f.startswith(scene_name) and f.endswith(".mp4")
-        ]
-
-        latest = max(videos, key=lambda f: os.path.getmtime(os.path.join(video_dir, f)))
-
-        return jsonify(
-            {
-                "status": "success",
-                "video_url": f"/static/media/videos/manim_code/480p15/{latest}",
-                "code": manim_code,
-                "chat_history": session["chat_history"],
-            }
-        )
+        return clean_code.strip()
 
     except Exception as e:
-        logger.exception(f"Animation processing failed: {str(e)}")
-        return (
-            jsonify(
-                {"status": "error", "message": f"Animation processing failed: {str(e)}"}
-            ),
-            500,
-        )
+        print(f"\nError generating code: {e}")
+        return None
 
 
-@app.route("/get_chat_history", methods=["GET"])
-def get_chat_history():
-    return jsonify({"chat_history": session.setdefault("chat_history", [])})
+def main():
+    if len(sys.argv) > 1:
+        user_prompt = " ".join(sys.argv[1:])
+    else:
+        print("Welcome to AutoManim CLI (OpenRouter Edition)")
+        user_prompt = input("Enter animation description: ")
+
+    if not user_prompt:
+        print("No prompt provided. Exiting.")
+        return
+
+    code = generate_manim_code(user_prompt)
+    if not code:
+        print("Failed to generate code.")
+        return
+
+    output_file = Path("generated_scene.py")
+    output_file.write_text(code, encoding="utf-8")
+    print(f"Code saved to {output_file.absolute()}")
+
+    run_now = input("Render animation now? (Y/n): ").strip().lower()
+    if run_now in ["", "y", "yes"]:
+        print("Rendering...")
+        # Render low quality preview (-ql)
+        try:
+            subprocess.run(
+                [sys.executable, "-m", "manim", "-ql", str(output_file), "GenScene"],
+                check=True,
+            )
+            print("\nRender complete!")
+        except subprocess.CalledProcessError as e:
+            print(f"\nRender failed with exit code {e.returncode}")
+            print("Check the generated code for errors.")
 
 
-@app.route("/clear_chat_history", methods=["POST"])
-def clear_chat_history():
-    session["chat_history"] = []
-    session.modified = True
-    return jsonify({"success": True})
+if __name__ == "__main__":
+    main()

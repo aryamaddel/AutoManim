@@ -10,10 +10,8 @@ RUN apt-get update && apt-get -y upgrade && \
 
 COPY . /app
 
-EXPOSE 5000
-
-VOLUME ["/app/static/media"]
-
 RUN uv sync
 
-CMD ["uv", "run", "flask", "run", "--host=0.0.0.0"]
+# Default command to run the CLI
+CMD ["uv", "run", "python", "app.py"]
+

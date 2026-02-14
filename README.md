@@ -1,78 +1,79 @@
-# AutoManim
+# AutoManim (CLI Edition)
 
-AutoManim is a web application that automates the creation and execution of mathematical animations using Manim, a Python library for creating precise, beautiful animations. This tool allows users to generate Manim code from natural language descriptions and instantly render the animations.
+AutoManim automates the creation and execution of mathematical animations using Manim and OpenRouter. It generates Python code for Manim based on natural language descriptions and renders it immediately.
 
 ## Features
 
-- **AI-Powered Code Generation**: Convert natural language descriptions into executable Manim code using the Groq API
-- **Real-Time Execution**: Execute Manim code directly from the browser interface
-- **Video Playback**: View generated animations directly in the web interface
+- **AI-Powered Code Generation**: Uses OpenRouter (openrouter/free) to generate Manim code from your descriptions.
+- **Instant Rendering**: Automatically compiles and renders the generated animation.
+- **Stream Output**: Watch the AI code generation process in real-time.
+- **CLI Only**: Simple, lightweight command-line interface.
 
 ## Prerequisites
 
-- Python
-- Manim
-- Flask
-- Groq
+- **Python 3.10+** (Recommended)
+- **Manim Community Edition** (`pip install manim`)
+- **OpenAI Python Client** (`pip install openai`)
+- **FFmpeg** (Required for Manim rendering)
+- **OpenRouter API Key** (Get one at [openrouter.ai](https://openrouter.ai/))
 
 ## Installation
 
 1. Clone the repository:
 
-   ```
+   ```bash
    git clone https://github.com/yourusername/AutoManim.git
    cd AutoManim
    ```
 
-2. Install required Python packages:
+2. Install dependencies:
 
+   ```bash
+   pip install manim openai python-dotenv
    ```
-   pip install flask groq manim
+
+   _Note: Manim has system dependencies (like FFmpeg). See [Manim Installation Guide](https://docs.manim.community/en/stable/installation.html)._
+
+3. Set up your OpenRouter API key:
+   Create a `.env` file in the project root:
+   ```env
+   OPENROUTER_API_KEY=your_api_key_here
    ```
-
-3. Set up your Groq API key as an environment variable
-
-4. Open your browser and navigate to `http://127.0.0.1:5000`
 
 ## Usage
 
-1. **Generate Manim Code**:
+Run the tool with a description of the animation you want:
 
-   - Type a description of the animation you want in the input field at the bottom
-   - Click the "Generate" button
-   - The AI will convert your description into Manim code
+```bash
+python app.py "Create a circle that transforms into a square"
+```
 
-2. **Execute the Code**:
+Or run interactively:
 
-   - Review and optionally modify the generated code
-   - Click the "Execute" button
-   - Wait for the animation to render (status will be displayed)
+```bash
+python app.py
+```
 
-3. **Watch the Animation**:
-   - The rendered animation will appear in the "Generated Video" section
-   - You can play, pause, and replay the animation using the video controls
+Then enter your prompt when asked.
+
+The tool will:
+
+1. Generate the Manim code (saved to `generated_scene.py`).
+2. Ask for confirmation to render.
+3. Render the animation (saved to `media/videos/generated_scene/ql/GenScene.mp4`).
 
 ## Example Prompts
 
-- "Create a circle that transforms into a square"
-- "Show a 3D rotating cube with different colors on each face"
-- "Animate the Pythagorean theorem with squares on each side of a right triangle"
-- "Create a visual proof of the sum of first n odd numbers equals n squared"
+- "Visualize the Pythagorean theorem."
+- "Show a 3D rotating cube with text labels."
+- "Animate a sine wave transforming into a cosine wave."
 
 ## Project Structure
 
-- `app.py`: Flask application with routes for the web interface and API endpoints
-- `templates/index.html`: Main web interface
-- `static/`: Directory for static files and generated videos
-
-## Troubleshooting
-
-If you encounter issues with video generation:
-
-- Check that Manim is properly installed with all dependencies
-- Ensure you have FFmpeg installed for video rendering
-- Check permissions for writing to the static directory
+- `app.py`: Main CLI application.
+- `generated_scene.py`: Temporary file for generated Manim code.
+- `.env`: API configuration.
 
 ## License
 
-This project is open source and available under the MIT License.
+MIT License
