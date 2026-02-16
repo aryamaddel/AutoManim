@@ -50,3 +50,4 @@ static/manim_code.py
 # OS specific
 .DS_Store
 Thumbs.db
+generated_scene.py
