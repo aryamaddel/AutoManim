@@ -40,7 +40,7 @@ def main():
     print("Generating code...")
     try:
         response = client.chat.completions.create(
-            model="openrouter/free",
+            model="arcee-ai/trinity-large-preview:free",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": prompt},
